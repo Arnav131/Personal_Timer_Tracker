@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 /**
  * PomodoroTimer — large SVG arc timer with controls.
  */

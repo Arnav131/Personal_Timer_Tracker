@@ -16,7 +16,7 @@ export function useTimer(workMin = 25, breakMin = 10) {
     if (state === 'idle' && !isBreak) {
       setRemaining(workMin * 60);
     }
-  }, [workMin]);
+  }, [workMin, state, isBreak]);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {

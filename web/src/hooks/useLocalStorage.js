@@ -1,9 +1,69 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { getLocalDateKey, millisecondsUntilLocalMidnight } from '../utils/localDate';
 
-/**
- * useLocalStorage — persists React state to localStorage.
- * Handles daily reset for ephemeral data.
- */
+const DAILY_DATA_KEY = 'pe_daily_data';
+const POMODORO_SETTINGS_KEY = 'pe_pomodoro_settings';
+const DEFAULT_WORK_MINUTES = 25;
+const DEFAULT_BREAK_MINUTES = 10;
+
+function validMinutes(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 1 ? number : fallback;
+}
+
+function readPomodoroSettings() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(POMODORO_SETTINGS_KEY));
+    return {
+      workMin: validMinutes(parsed?.workMin, DEFAULT_WORK_MINUTES),
+      breakMin: validMinutes(parsed?.breakMin, DEFAULT_BREAK_MINUTES),
+    };
+  } catch {
+    return { workMin: DEFAULT_WORK_MINUTES, breakMin: DEFAULT_BREAK_MINUTES };
+  }
+}
+
+function createFreshDailyData(date, previousData) {
+  const savedSettings = readPomodoroSettings();
+  return {
+    date,
+    macroTasks: [],
+    pomodoroSessions: 0,
+    pomodoroWorkMin: validMinutes(previousData?.pomodoroWorkMin, savedSettings.workMin),
+    pomodoroBreakMin: validMinutes(previousData?.pomodoroBreakMin, savedSettings.breakMin),
+    microStatus: {},
+    enforcerLogs: [],
+  };
+}
+
+function normalizeDailyData(data, date) {
+  const fresh = createFreshDailyData(date, data);
+  return {
+    ...fresh,
+    ...data,
+    date,
+    macroTasks: Array.isArray(data?.macroTasks) ? data.macroTasks : [],
+    pomodoroSessions: Number.isFinite(Number(data?.pomodoroSessions))
+      ? Math.max(0, Number(data.pomodoroSessions))
+      : 0,
+    pomodoroWorkMin: fresh.pomodoroWorkMin,
+    pomodoroBreakMin: fresh.pomodoroBreakMin,
+    microStatus: data?.microStatus && typeof data.microStatus === 'object'
+      ? data.microStatus
+      : {},
+    enforcerLogs: Array.isArray(data?.enforcerLogs) ? data.enforcerLogs : [],
+  };
+}
+
+function saveBackup(data) {
+  if (!data || typeof data !== 'object') return;
+  const date = typeof data.date === 'string' ? data.date : 'unknown-date';
+  try {
+    localStorage.setItem(`pe_backup_${date}`, JSON.stringify(data));
+  } catch { /* A failed backup must not prevent the daily reset. */ }
+}
+
+/** Persists ordinary state in localStorage. */
 export function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -17,67 +77,84 @@ export function useLocalStorage(key, initialValue) {
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // localStorage full or unavailable
-    }
+    } catch { /* State remains available for the current session. */ }
   }, [key, value]);
 
   return [value, setValue];
 }
 
-/**
- * useDailyData — ephemeral daily data that resets at midnight.
- * Returns [data, setData] where data auto-resets if the date changes.
- */
+/** Daily results reset at the user's local midnight. */
 export function useDailyData() {
-  const today = new Date().toISOString().slice(0, 10);
-
-  const getFresh = () => ({
-    date: today,
-    macroTasks: [],
-    pomodoroSessions: 0,
-    pomodoroWorkMin: 25,
-    pomodoroBreakMin: 10,
-    microStatus: {},
-    enforcerLogs: [],
-  });
-
   const [data, setData] = useState(() => {
+    const today = getLocalDateKey();
     try {
-      const stored = localStorage.getItem('pe_daily_data');
+      const stored = localStorage.getItem(DAILY_DATA_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.date === today) return parsed;
-        // Different day — backup and reset
-        localStorage.setItem(`pe_backup_${parsed.date}`, stored);
+        if (parsed?.date === today) return normalizeDailyData(parsed, today);
+        saveBackup(parsed);
+        return createFreshDailyData(today, parsed);
       }
-    } catch { /* ignore */ }
-    return getFresh();
+    } catch { /* Invalid stored data is replaced with a clean day. */ }
+    return createFreshDailyData(today);
   });
 
-  // Persist on every change
   useEffect(() => {
-    localStorage.setItem('pe_daily_data', JSON.stringify(data));
+    try {
+      localStorage.setItem(DAILY_DATA_KEY, JSON.stringify(data));
+      localStorage.setItem(POMODORO_SETTINGS_KEY, JSON.stringify({
+        workMin: data.pomodoroWorkMin,
+        breakMin: data.pomodoroBreakMin,
+      }));
+    } catch { /* Daily state remains available for the current session. */ }
   }, [data]);
 
-  // Check for date change periodically
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().toISOString().slice(0, 10);
-      if (now !== data.date) {
-        localStorage.setItem(`pe_backup_${data.date}`, JSON.stringify(data));
-        setData(getFresh());
-      }
-    }, 60000); // check every minute
-    return () => clearInterval(interval);
-  }, [data.date]);
+    let midnightTimer;
+
+    const resetIfNeeded = () => {
+      const today = getLocalDateKey();
+      setData(current => {
+        if (current.date === today) return current;
+        saveBackup(current);
+        return createFreshDailyData(today, current);
+      });
+    };
+
+    const scheduleMidnight = () => {
+      clearTimeout(midnightTimer);
+      midnightTimer = setTimeout(() => {
+        resetIfNeeded();
+        scheduleMidnight();
+      }, millisecondsUntilLocalMidnight() + 100);
+    };
+
+    const handleWake = () => {
+      resetIfNeeded();
+      scheduleMidnight();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') handleWake();
+    };
+
+    resetIfNeeded();
+    scheduleMidnight();
+    const fallbackInterval = setInterval(resetIfNeeded, 60000);
+    window.addEventListener('focus', handleWake);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(midnightTimer);
+      clearInterval(fallbackInterval);
+      window.removeEventListener('focus', handleWake);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   return [data, setData];
 }
 
-/**
- * useMicroConfig — persistent micro task definitions.
- */
+// Habit definitions persist; only their checked status is daily.
 const DEFAULT_MICRO_TASKS = [
   { id: 1, text: 'Apply hair serum' },
   { id: 2, text: 'Polish shoes' },

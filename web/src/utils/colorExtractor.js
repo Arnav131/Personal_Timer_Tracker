@@ -63,7 +63,7 @@ export function extractDominantColor(imageUrl) {
 
         for (let i = 0; i < pixels.length; i += 4) {
           const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
-          const [h, s, v] = rgbToHsv(r, g, b);
+          const [, s, v] = rgbToHsv(r, g, b);
           const score = s * v;
           if (score > bestScore && v > 0.3 && s > 0.2) {
             bestScore = score;

@@ -2,6 +2,8 @@
  * ProgressDashboard — dual SVG progress rings.
  */
 
+import FocusMusicPlayer from './FocusMusicPlayer';
+
 function getColor(pct) {
   if (pct <= 33) return 'var(--accent)';
   if (pct <= 66) return 'var(--blue)';
@@ -40,7 +42,7 @@ function ProgressRing({ pct, title, subtitle }) {
   );
 }
 
-export default function ProgressDashboard({ data, microConfig }) {
+export default function ProgressDashboard({ data, microConfig, musicPauseSignal }) {
   // Macro progress: 50% tasks + 50% pomodoro (cap at 8)
   const tasks = data.macroTasks;
   const taskRatio = tasks.length > 0
@@ -58,9 +60,13 @@ export default function ProgressDashboard({ data, microConfig }) {
 
   return (
     <div className="progress-dashboard glass">
-      <ProgressRing pct={macroPct} title="Macro Progress" subtitle="Study & Tasks" />
-      <div className="progress-divider" />
-      <ProgressRing pct={microPct} title="Micro Progress" subtitle="Daily Habits" />
+      <div className="progress-dashboard__metrics">
+        <ProgressRing pct={macroPct} title="Macro Progress" subtitle="Study & Tasks" />
+        <div className="progress-divider" />
+        <ProgressRing pct={microPct} title="Micro Progress" subtitle="Daily Habits" />
+      </div>
+      <div className="progress-dashboard__section-divider" />
+      <FocusMusicPlayer pauseSignal={musicPauseSignal} />
     </div>
   );
 }

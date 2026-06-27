@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+const ENFORCER_INTERVAL = 60 * 60 * 1000;
+
 /**
  * useEnforcer — 60-minute timer that triggers the accountability modal.
  */
 export function useEnforcer() {
-  const ENFORCER_INTERVAL = 60 * 60 * 1000; // 60 minutes
   const [showEnforcer, setShowEnforcer] = useState(false);
   const timerRef = useRef(null);
 

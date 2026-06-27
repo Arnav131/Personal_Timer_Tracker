@@ -5,8 +5,6 @@
  */
 
 let audioCtx = null;
-let oscillator = null;
-let gainNode = null;
 let loopInterval = null;
 
 function getContext() {

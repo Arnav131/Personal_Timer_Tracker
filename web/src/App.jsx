@@ -5,6 +5,7 @@ import { useTheme } from './hooks/useTheme';
 import { useEnforcer } from './hooks/useEnforcer';
 import { playOnce } from './utils/audioManager';
 import { generatePDF } from './utils/pdfGenerator';
+import { getLocalTimeKey } from './utils/localDate';
 
 import Navbar from './components/Navbar';
 import ProgressDashboard from './components/ProgressDashboard';
@@ -25,13 +26,16 @@ export default function App() {
   const [showBreakPrompt, setShowBreakPrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPomodoroSettings, setShowPomodoroSettings] = useState(false);
+  const [musicPauseSignal, setMusicPauseSignal] = useState(0);
 
   // Pomodoro timer
   const timer = useTimer(data.pomodoroWorkMin, data.pomodoroBreakMin);
+  const { onComplete, startBreak, startWork } = timer;
 
   // Timer completion handler
   useEffect(() => {
-    timer.onComplete((wasBreak) => {
+    onComplete((wasBreak) => {
+      setMusicPauseSignal(signal => signal + 1);
       playOnce();
       if (wasBreak) {
         // Break ended
@@ -45,13 +49,13 @@ export default function App() {
         setShowBreakPrompt(true);
       }
     });
-  }, [timer.onComplete, setData]);
+  }, [onComplete, setData]);
 
   // Break prompt actions
   const handleBreak = useCallback(() => {
     setShowBreakPrompt(false);
-    timer.startBreak();
-  }, [timer]);
+    startBreak();
+  }, [startBreak]);
 
   const handleMicro = useCallback(() => {
     setShowBreakPrompt(false);
@@ -60,8 +64,8 @@ export default function App() {
 
   const handleContinue = useCallback(() => {
     setShowBreakPrompt(false);
-    timer.startWork();
-  }, [timer]);
+    startWork();
+  }, [startWork]);
 
   // Enforcer submit
   const handleEnforcerSubmit = useCallback((text) => {
@@ -69,7 +73,7 @@ export default function App() {
       ...prev,
       enforcerLogs: [
         ...prev.enforcerLogs,
-        { timestamp: new Date().toISOString().slice(11, 19), text },
+        { timestamp: getLocalTimeKey(), text },
       ],
     }));
     resetEnforcer();
@@ -112,7 +116,11 @@ export default function App() {
         </div>
 
         {/* Progress Dashboard */}
-        <ProgressDashboard data={data} microConfig={microConfig} />
+        <ProgressDashboard
+          data={data}
+          microConfig={microConfig}
+          musicPauseSignal={musicPauseSignal}
+        />
 
         {/* Content Area */}
         <div className="content-area">
