@@ -1,16 +1,29 @@
-# React + Vite
+# Productivity Enforcer web application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the actively developed React/Vite browser application. It includes the glass UI, task and habit workflows, Pomodoro timer, focus music, PDF reporting, optional Google authentication, and Supabase persistence.
 
-Currently, two official plugins are available:
+## Start the development server
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm ci
+npm run dev
+```
 
-## React Compiler
+Open [http://localhost:5173](http://localhost:5173). Supabase configuration is optional; without it the application runs in guest mode.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Validate a change
 
-## Expanding the Oxlint configuration
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Documentation
+
+- [Project overview](../README.md)
+- [Complete local setup and troubleshooting](../LOCAL_SETUP.md)
+- [Google sign-in and Supabase setup](../GOOGLE_AUTH_SETUP.md)
+- [Docker and Netlify deployment](../NETLIFY_DOCKER_GITHUB_ACTIONS.md)
+
+Dependencies are defined in `package.json` and locked by `package-lock.json`. The Python requirements under `../desktop/` do not apply to this web application.
