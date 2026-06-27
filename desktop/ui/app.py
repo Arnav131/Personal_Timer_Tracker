@@ -1,17 +1,22 @@
 """
 Main Application Window — Productivity Enforcer
 
-Frameless, dark-themed CustomTkinter window with:
+Premium glassmorphism desktop app with:
+- Full-bleed background image (pixel art)
+- Frosted glass UI panels
 - Custom drag region
 - Mode toggle (Macro/Micro)
 - Progress dashboard strip
 - View switching with transitions
+- Settings panel for background customization
 """
 
 import customtkinter as ctk
 import tkinter as tk
 from datetime import datetime
+from PIL import ImageTk
 
+from ui.theme_manager import ThemeManager
 from ui.navbar import NavBar
 from ui.progress_dashboard import ProgressDashboard
 from ui.macro_view import MacroView
@@ -20,24 +25,8 @@ from ui.break_prompt import BreakPrompt
 from ui.enforcer_window import EnforcerWindow
 
 
-# ─── Color Palette ───────────────────────────────────
-class Colors:
-    BG = "#1e1e2e"
-    SURFACE = "#2a2a3e"
-    ACCENT = "#d4a853"
-    ACCENT_SOFT = "#c8956c"
-    TEXT = "#f0e9d6"
-    TEXT_SEC = "#a0998a"
-    SUCCESS = "#7cb899"
-    WARNING = "#d4a853"
-    BORDER = "#3a3a52"
-    HOVER = "#353550"
-    DANGER = "#c75050"
-    BLUE_MID = "#6ba3d6"
-
-
 class App(ctk.CTk):
-    """Main application window."""
+    """Main application window with background image and glass UI."""
 
     def __init__(self, data_manager, audio_manager):
         super().__init__()
@@ -46,11 +35,14 @@ class App(ctk.CTk):
         self.audio_manager = audio_manager
         self.current_mode = "macro"  # "macro" or "micro"
 
+        # ── Initialize Theme Manager ──
+        self.theme = ThemeManager()
+
         # ── Window Configuration ──
         self.title("Productivity Enforcer")
-        self.geometry("960x700")
-        self.minsize(900, 650)
-        self.configure(fg_color=Colors.BG)
+        self.geometry("1100x750")
+        self.minsize(1000, 700)
+        self.configure(fg_color="#0a0a14")
 
         # Frameless window
         self.overrideredirect(True)
@@ -59,13 +51,13 @@ class App(ctk.CTk):
         self.update_idletasks()
         screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
-        x = (screen_w - 960) // 2
-        y = (screen_h - 700) // 2
-        self.geometry(f"960x700+{x}+{y}")
+        x = (screen_w - 1100) // 2
+        y = (screen_h - 750) // 2
+        self.geometry(f"1100x750+{x}+{y}")
 
         # Track window state
         self._is_maximized = False
-        self._normal_geometry = f"960x700+{x}+{y}"
+        self._normal_geometry = f"1100x750+{x}+{y}"
 
         # ── Build UI ──
         self._build_ui()
@@ -85,11 +77,30 @@ class App(ctk.CTk):
         # Reference to tray manager (set externally)
         self.tray_manager = None
 
+        # ── Bind window resize to update background ──
+        self.bind("<Configure>", self._on_resize)
+        self._last_size = (0, 0)
+
     def _build_ui(self):
-        """Build the entire UI layout."""
-        # Main container
-        self.main_frame = ctk.CTkFrame(self, fg_color=Colors.BG, corner_radius=0)
-        self.main_frame.pack(fill="both", expand=True)
+        """Build the entire UI layout with background canvas."""
+        # ── Background Canvas (full-bleed image layer) ──
+        self.bg_canvas = tk.Canvas(
+            self,
+            highlightthickness=0,
+            bd=0,
+        )
+        self.bg_canvas.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Render initial background
+        self._update_background()
+
+        # ── Main container (glass panels on top of background) ──
+        self.main_frame = ctk.CTkFrame(
+            self,
+            fg_color="transparent",
+            corner_radius=0,
+        )
+        self.main_frame.place(x=0, y=0, relwidth=1, relheight=1)
 
         # ── Navigation Bar ──
         self.navbar = NavBar(
@@ -98,20 +109,27 @@ class App(ctk.CTk):
             on_maximize=self._toggle_maximize,
             on_close=self.minimize_to_tray,
             on_pdf=self._download_pdf,
+            on_settings=self._open_settings,
             app=self,
+            theme=self.theme,
         )
         self.navbar.pack(fill="x", padx=0, pady=0)
 
         # ── Mode Toggle ──
         self.toggle_frame = ctk.CTkFrame(
-            self.main_frame, fg_color=Colors.BG, height=50
+            self.main_frame, fg_color="transparent", height=54
         )
-        self.toggle_frame.pack(fill="x", padx=24, pady=(8, 0))
+        self.toggle_frame.pack(fill="x", padx=28, pady=(10, 0))
         self.toggle_frame.pack_propagate(False)
 
-        # Toggle container
+        # Toggle container (glass pill)
         toggle_inner = ctk.CTkFrame(
-            self.toggle_frame, fg_color=Colors.SURFACE, corner_radius=12, height=42
+            self.toggle_frame,
+            fg_color=self.theme.surface,
+            corner_radius=14,
+            height=46,
+            border_width=1,
+            border_color=self.theme.border,
         )
         toggle_inner.pack(pady=4)
 
@@ -119,41 +137,43 @@ class App(ctk.CTk):
             toggle_inner,
             text="📚  Macro Tasks",
             font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            fg_color=Colors.ACCENT,
-            hover_color=Colors.ACCENT_SOFT,
-            text_color="#1e1e2e",
-            corner_radius=10,
-            height=34,
-            width=160,
+            fg_color=self.theme.accent,
+            hover_color=self.theme.accent_soft,
+            text_color="#0a0a14",
+            corner_radius=11,
+            height=36,
+            width=170,
             command=lambda: self.switch_mode("macro"),
         )
-        self.macro_btn.pack(side="left", padx=4, pady=4)
+        self.macro_btn.pack(side="left", padx=5, pady=5)
 
         self.micro_btn = ctk.CTkButton(
             toggle_inner,
             text="⚡  Micro Tasks",
             font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
             fg_color="transparent",
-            hover_color=Colors.HOVER,
-            text_color=Colors.TEXT_SEC,
-            corner_radius=10,
-            height=34,
-            width=160,
+            hover_color=self.theme.hover,
+            text_color=self.theme.text_sec,
+            corner_radius=11,
+            height=36,
+            width=170,
             command=lambda: self.switch_mode("micro"),
         )
-        self.micro_btn.pack(side="left", padx=4, pady=4)
+        self.micro_btn.pack(side="left", padx=5, pady=5)
 
         # ── Progress Dashboard ──
         self.progress_dashboard = ProgressDashboard(
-            self.main_frame, data_manager=self.data_manager
+            self.main_frame,
+            data_manager=self.data_manager,
+            theme=self.theme,
         )
-        self.progress_dashboard.pack(fill="x", padx=24, pady=(10, 4))
+        self.progress_dashboard.pack(fill="x", padx=28, pady=(10, 4))
 
         # ── Content Area ──
         self.content_frame = ctk.CTkFrame(
-            self.main_frame, fg_color=Colors.BG, corner_radius=0
+            self.main_frame, fg_color="transparent", corner_radius=0
         )
-        self.content_frame.pack(fill="both", expand=True, padx=24, pady=(4, 16))
+        self.content_frame.pack(fill="both", expand=True, padx=28, pady=(4, 20))
 
         # ── Macro View ──
         self.macro_view = MacroView(
@@ -161,6 +181,7 @@ class App(ctk.CTk):
             data_manager=self.data_manager,
             audio_manager=self.audio_manager,
             app=self,
+            theme=self.theme,
         )
 
         # ── Micro View ──
@@ -168,10 +189,66 @@ class App(ctk.CTk):
             self.content_frame,
             data_manager=self.data_manager,
             app=self,
+            theme=self.theme,
         )
 
         # Show macro by default
         self.macro_view.pack(fill="both", expand=True)
+
+    # ─── Background Management ───────────────────────
+
+    def _update_background(self):
+        """Render the background image on the canvas."""
+        w = self.winfo_width() or 1100
+        h = self.winfo_height() or 750
+
+        photo = self.theme.get_background_photo(w, h)
+        if photo:
+            self.bg_canvas.delete("all")
+            self.bg_canvas.create_image(0, 0, anchor="nw", image=photo)
+            # Keep reference to prevent garbage collection
+            self.bg_canvas._bg_photo = photo
+        else:
+            # Fallback: solid dark background
+            self.bg_canvas.delete("all")
+            self.bg_canvas.configure(bg="#0a0a14")
+
+    def _on_resize(self, event=None):
+        """Handle window resize — update background image."""
+        if event and event.widget == self:
+            w, h = event.width, event.height
+            if (w, h) != self._last_size and w > 100 and h > 100:
+                self._last_size = (w, h)
+                # Debounce: update after brief delay
+                if hasattr(self, '_resize_after_id'):
+                    self.after_cancel(self._resize_after_id)
+                self._resize_after_id = self.after(150, self._update_background)
+
+    def refresh_background(self):
+        """Force refresh the background (called after theme change)."""
+        self._update_background()
+
+    # ─── Settings ────────────────────────────────────
+
+    def _open_settings(self):
+        """Open the settings panel."""
+        from ui.settings_panel import SettingsPanel
+        SettingsPanel(self, theme=self.theme, app=self)
+
+    def apply_theme_update(self):
+        """Called after theme/background changes to refresh all UI elements."""
+        self._update_background()
+        # Update toggle buttons
+        self.macro_btn.configure(
+            fg_color=self.theme.accent if self.current_mode == "macro" else "transparent",
+            hover_color=self.theme.accent_soft if self.current_mode == "macro" else self.theme.hover,
+            text_color="#0a0a14" if self.current_mode == "macro" else self.theme.text_sec,
+        )
+        self.micro_btn.configure(
+            fg_color=self.theme.accent if self.current_mode == "micro" else "transparent",
+            hover_color=self.theme.accent_soft if self.current_mode == "micro" else self.theme.hover,
+            text_color="#0a0a14" if self.current_mode == "micro" else self.theme.text_sec,
+        )
 
     # ─── Mode Switching ──────────────────────────────
 
@@ -187,19 +264,23 @@ class App(ctk.CTk):
             self.macro_view.pack(fill="both", expand=True)
             # Update toggle styling
             self.macro_btn.configure(
-                fg_color=Colors.ACCENT, text_color="#1e1e2e"
+                fg_color=self.theme.accent, text_color="#0a0a14",
+                hover_color=self.theme.accent_soft,
             )
             self.micro_btn.configure(
-                fg_color="transparent", text_color=Colors.TEXT_SEC
+                fg_color="transparent", text_color=self.theme.text_sec,
+                hover_color=self.theme.hover,
             )
         else:
             self.macro_view.pack_forget()
             self.micro_view.pack(fill="both", expand=True)
             self.micro_btn.configure(
-                fg_color=Colors.ACCENT, text_color="#1e1e2e"
+                fg_color=self.theme.accent, text_color="#0a0a14",
+                hover_color=self.theme.accent_soft,
             )
             self.macro_btn.configure(
-                fg_color="transparent", text_color=Colors.TEXT_SEC
+                fg_color="transparent", text_color=self.theme.text_sec,
+                hover_color=self.theme.hover,
             )
 
         # Refresh progress
@@ -220,6 +301,7 @@ class App(ctk.CTk):
             data_manager=self.data_manager,
             audio_manager=self.audio_manager,
             app=self,
+            theme=self.theme,
         )
 
     # ─── Enforcer Window ─────────────────────────────
@@ -235,6 +317,7 @@ class App(ctk.CTk):
             data_manager=self.data_manager,
             audio_manager=self.audio_manager,
             on_submit=self._on_enforcer_submit,
+            theme=self.theme,
         )
 
     def _on_enforcer_submit(self):
@@ -293,13 +376,13 @@ class App(ctk.CTk):
         """Setup resize grips on window edges."""
         # Bottom-right resize grip
         grip = ctk.CTkLabel(
-            self.main_frame,
+            self,
             text="⋮⋮",
-            font=ctk.CTkFont(size=10),
-            text_color=Colors.TEXT_SEC,
+            font=ctk.CTkFont(size=12),
+            text_color=self.theme.text_sec,
             fg_color="transparent",
-            width=16,
-            height=16,
+            width=18,
+            height=18,
             cursor="size_nw_se",
         )
         grip.place(relx=1.0, rely=1.0, anchor="se", x=-4, y=-4)
@@ -313,8 +396,8 @@ class App(ctk.CTk):
         self._resize_h = self.winfo_height()
 
     def _do_resize(self, event):
-        new_w = max(900, self._resize_w + (event.x_root - self._resize_x))
-        new_h = max(650, self._resize_h + (event.y_root - self._resize_y))
+        new_w = max(1000, self._resize_w + (event.x_root - self._resize_x))
+        new_h = max(700, self._resize_h + (event.y_root - self._resize_y))
         self.geometry(f"{new_w}x{new_h}")
 
     # ─── Clock ────────────────────────────────────────

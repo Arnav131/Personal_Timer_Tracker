@@ -1,12 +1,13 @@
 """
-Pomodoro Timer — circular arc countdown timer.
+Pomodoro Timer — Large, premium circular arc countdown.
 
-Features:
-- Large circular arc display (Canvas-drawn)
-- MM:SS center text
-- Start/Pause/Resume/Reset controls
-- Configurable durations via settings
-- Session counter
+Inspired by modern focus app designs with:
+- 300px circular arc display (Canvas-drawn)
+- Large 56pt MM:SS center text
+- "Focus" / "Break" mode label
+- Glass-panel card with subtle border glow
+- Pill-shaped Start/Pause/Reset controls
+- Session counter with refined typography
 - Triggers Break Decision Prompt on completion
 """
 
@@ -17,21 +18,8 @@ import threading
 import time
 
 
-class Colors:
-    BG = "#1e1e2e"
-    SURFACE = "#2a2a3e"
-    ACCENT = "#d4a853"
-    ACCENT_SOFT = "#c8956c"
-    TEXT = "#f0e9d6"
-    TEXT_SEC = "#a0998a"
-    SUCCESS = "#7cb899"
-    BORDER = "#3a3a52"
-    HOVER = "#353550"
-    BLUE_MID = "#6ba3d6"
-
-
 class PomodoroTimer(ctk.CTkFrame):
-    """Pomodoro timer with circular arc display and session tracking."""
+    """Premium Pomodoro timer with large circular arc display."""
 
     # Timer states
     IDLE = "idle"
@@ -39,11 +27,18 @@ class PomodoroTimer(ctk.CTkFrame):
     PAUSED = "paused"
     BREAK = "break"
 
-    def __init__(self, parent, data_manager, audio_manager, app):
-        super().__init__(parent, fg_color=Colors.SURFACE, corner_radius=14)
+    def __init__(self, parent, data_manager, audio_manager, app, theme):
+        super().__init__(
+            parent,
+            fg_color=theme.surface,
+            corner_radius=16,
+            border_width=1,
+            border_color=theme.border,
+        )
         self.data_manager = data_manager
         self.audio_manager = audio_manager
         self.app = app
+        self.theme = theme
 
         # Timer state
         work_dur, break_dur = self.data_manager.get_pomodoro_durations()
@@ -55,22 +50,22 @@ class PomodoroTimer(ctk.CTkFrame):
         self._stop_event = threading.Event()
         self._is_break_timer = False
 
-        # Arc display size
-        self.arc_size = 200
+        # Arc display size — large and premium
+        self.arc_size = 300
 
         self._build_ui()
 
     def _build_ui(self):
-        """Build the timer UI."""
+        """Build the premium timer UI."""
         # Header with settings
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=16, pady=(12, 0))
+        header.pack(fill="x", padx=20, pady=(16, 0))
 
         ctk.CTkLabel(
             header,
             text="🍅  Pomodoro Timer",
-            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
-            text_color=Colors.ACCENT,
+            font=ctk.CTkFont(family="Segoe UI", size=17, weight="bold"),
+            text_color=self.theme.accent,
             fg_color="transparent",
         ).pack(side="left")
 
@@ -78,94 +73,104 @@ class PomodoroTimer(ctk.CTkFrame):
         settings_btn = ctk.CTkButton(
             header,
             text="⚙",
-            font=ctk.CTkFont(size=16),
+            font=ctk.CTkFont(size=17),
             fg_color="transparent",
-            hover_color=Colors.HOVER,
-            text_color=Colors.TEXT_SEC,
-            width=32,
-            height=32,
-            corner_radius=8,
+            hover_color=self.theme.hover,
+            text_color=self.theme.text_sec,
+            width=36,
+            height=36,
+            corner_radius=10,
             command=self._show_settings,
         )
         settings_btn.pack(side="right")
 
-        # Canvas for arc timer — we draw both the arc and the time text on this
+        # Canvas for arc timer — large, centered, premium
         self.canvas = tk.Canvas(
             self,
             width=self.arc_size,
             height=self.arc_size,
-            bg=Colors.SURFACE,
+            bg=self.theme.surface,
             highlightthickness=0,
         )
-        self.canvas.pack(pady=(10, 4))
+        self.canvas.pack(pady=(12, 4))
 
-        # Status label
+        # Mode label ("Focus" or "Break") — below canvas
+        self.mode_label = ctk.CTkLabel(
+            self,
+            text="Focus",
+            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            text_color=self.theme.text,
+            fg_color="transparent",
+        )
+        self.mode_label.pack(pady=(0, 2))
+
+        # Status label (subtle)
         self.status_label = ctk.CTkLabel(
             self,
             text="Ready to focus",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
-            text_color=Colors.TEXT_SEC,
+            font=ctk.CTkFont(family="Segoe UI", size=13),
+            text_color=self.theme.text_sec,
             fg_color="transparent",
         )
-        self.status_label.pack(pady=(0, 2))
+        self.status_label.pack(pady=(0, 4))
 
         # Session counter
         sessions = self.data_manager.get_pomodoro_sessions()
         self.session_label = ctk.CTkLabel(
             self,
-            text=f"Session {sessions + 1} today  •  {sessions} completed",
-            font=ctk.CTkFont(family="Segoe UI", size=11),
-            text_color=Colors.TEXT_SEC,
+            text=f"Session {sessions + 1}  •  {sessions} completed today",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=self.theme.text_sec,
             fg_color="transparent",
         )
-        self.session_label.pack(pady=(0, 8))
+        self.session_label.pack(pady=(0, 10))
 
-        # Controls
+        # Controls — pill-shaped buttons
         controls = ctk.CTkFrame(self, fg_color="transparent")
-        controls.pack(pady=(0, 16))
+        controls.pack(pady=(0, 20))
 
         self.start_btn = ctk.CTkButton(
             controls,
             text="▶  Start",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            fg_color=Colors.ACCENT,
-            hover_color=Colors.ACCENT_SOFT,
-            text_color="#1e1e2e",
-            width=110,
-            height=38,
-            corner_radius=10,
+            font=ctk.CTkFont(family="Segoe UI", size=15, weight="bold"),
+            fg_color=self.theme.accent,
+            hover_color=self.theme.accent_soft,
+            text_color="#0a0a14",
+            width=120,
+            height=42,
+            corner_radius=21,
             command=self._start,
         )
-        self.start_btn.pack(side="left", padx=4)
+        self.start_btn.pack(side="left", padx=5)
 
         self.pause_btn = ctk.CTkButton(
             controls,
             text="⏸  Pause",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            fg_color=Colors.HOVER,
-            hover_color=Colors.BORDER,
-            text_color=Colors.TEXT,
-            width=110,
-            height=38,
-            corner_radius=10,
+            font=ctk.CTkFont(family="Segoe UI", size=15, weight="bold"),
+            fg_color=self.theme.hover,
+            hover_color=self.theme.border,
+            text_color=self.theme.text,
+            width=120,
+            height=42,
+            corner_radius=21,
             command=self._pause_resume,
             state="disabled",
         )
-        self.pause_btn.pack(side="left", padx=4)
+        self.pause_btn.pack(side="left", padx=5)
 
         self.reset_btn = ctk.CTkButton(
             controls,
             text="↺  Reset",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            fg_color=Colors.HOVER,
-            hover_color=Colors.BORDER,
-            text_color=Colors.TEXT_SEC,
-            width=100,
-            height=38,
-            corner_radius=10,
+            font=ctk.CTkFont(family="Segoe UI", size=15, weight="bold"),
+            fg_color=self.theme.hover,
+            hover_color=self.theme.border,
+            text_color=self.theme.text_sec,
+            width=110,
+            height=42,
+            corner_radius=21,
             command=self._reset,
         )
-        self.reset_btn.pack(side="left", padx=4)
+        self.reset_btn.pack(side="left", padx=5)
 
         # Initial draw
         self._draw_arc()
@@ -177,17 +182,17 @@ class PomodoroTimer(ctk.CTkFrame):
         return f"{m:02d}:{s:02d}"
 
     def _draw_arc(self):
-        """Draw the circular arc timer with centered time text."""
+        """Draw the large circular arc timer with centered time text."""
         self.canvas.delete("all")
         s = self.arc_size
-        pad = 14
-        lw = 10
+        pad = 20
+        lw = 6  # Thinner, more elegant line
 
-        # Background track
+        # Background track (subtle)
         self.canvas.create_arc(
             pad, pad, s - pad, s - pad,
             start=90, extent=-360,
-            outline=Colors.BORDER,
+            outline=self.theme.border,
             width=lw,
             style="arc",
         )
@@ -195,10 +200,10 @@ class PomodoroTimer(ctk.CTkFrame):
         # Progress arc
         if self._is_break_timer:
             total = self.break_duration
-            color = Colors.BLUE_MID
+            color = self.theme.blue
         else:
             total = self.work_duration
-            color = Colors.ACCENT
+            color = self.theme.accent
 
         if total > 0:
             pct = self.remaining / total
@@ -207,16 +212,31 @@ class PomodoroTimer(ctk.CTkFrame):
                 pad, pad, s - pad, s - pad,
                 start=90, extent=extent,
                 outline=color,
-                width=lw + 1,
+                width=lw + 2,
                 style="arc",
             )
 
-        # Time text in center of canvas
+        # Small glowing dot at the tip of the arc
+        if total > 0 and self.remaining > 0:
+            angle = math.radians(90 - (self.remaining / total) * 360)
+            cx = s / 2
+            cy = s / 2
+            r = (s - 2 * pad) / 2
+            dot_x = cx + r * math.cos(angle)
+            dot_y = cy - r * math.sin(angle)
+            dot_r = 5
+            self.canvas.create_oval(
+                dot_x - dot_r, dot_y - dot_r,
+                dot_x + dot_r, dot_y + dot_r,
+                fill=color, outline=color,
+            )
+
+        # Time text — large, centered, premium
         self.canvas.create_text(
             s // 2, s // 2,
             text=self._format_time(self.remaining),
-            fill=Colors.TEXT,
-            font=("Consolas", 30, "bold"),
+            fill=self.theme.text,
+            font=("Segoe UI", 52, "bold"),
         )
 
     def _update_display(self):
@@ -234,7 +254,8 @@ class PomodoroTimer(ctk.CTkFrame):
             self._stop_event.clear()
             self.start_btn.configure(state="disabled")
             self.pause_btn.configure(state="normal")
-            self.status_label.configure(text="🔥  Focus time — stay on track!")
+            self.mode_label.configure(text="Focus")
+            self.status_label.configure(text="🔥  Stay on track!")
             self._run_timer()
 
     def start_work_session(self):
@@ -252,7 +273,8 @@ class PomodoroTimer(ctk.CTkFrame):
         self._stop_event.clear()
         self.start_btn.configure(state="disabled")
         self.pause_btn.configure(state="normal")
-        self.status_label.configure(text="☕  Break time — relax!")
+        self.mode_label.configure(text="Break")
+        self.status_label.configure(text="☕  Relax and recharge")
         self._run_timer()
 
     def _pause_resume(self):
@@ -267,9 +289,9 @@ class PomodoroTimer(ctk.CTkFrame):
             self._stop_event.clear()
             self.pause_btn.configure(text="⏸  Pause")
             if self._is_break_timer:
-                self.status_label.configure(text="☕  Break time — relax!")
+                self.status_label.configure(text="☕  Relax and recharge")
             else:
-                self.status_label.configure(text="🔥  Focus time — stay on track!")
+                self.status_label.configure(text="🔥  Stay on track!")
             self._run_timer()
 
     def _reset(self):
@@ -281,6 +303,7 @@ class PomodoroTimer(ctk.CTkFrame):
         self._update_display()
         self.start_btn.configure(state="normal")
         self.pause_btn.configure(state="disabled", text="⏸  Pause")
+        self.mode_label.configure(text="Focus")
         self.status_label.configure(text="Ready to focus")
 
     def _run_timer(self):
@@ -307,6 +330,7 @@ class PomodoroTimer(ctk.CTkFrame):
             self._is_break_timer = False
             self.remaining = self.work_duration
             self._update_display()
+            self.mode_label.configure(text="Focus")
             self.status_label.configure(text="Break over! Ready for next session?")
             # Play chime once
             self.audio_manager.play_once()
@@ -317,10 +341,11 @@ class PomodoroTimer(ctk.CTkFrame):
             self.data_manager.increment_pomodoro_session()
             sessions = self.data_manager.get_pomodoro_sessions()
             self.session_label.configure(
-                text=f"Session {sessions + 1} today  •  {sessions} completed"
+                text=f"Session {sessions + 1}  •  {sessions} completed today"
             )
             self.remaining = self.work_duration
             self._update_display()
+            self.mode_label.configure(text="Focus")
             self.status_label.configure(text="Session complete! 🎉")
             self.app.refresh_progress()
             # Play chime once
@@ -334,52 +359,52 @@ class PomodoroTimer(ctk.CTkFrame):
         """Show Pomodoro duration settings dialog."""
         dialog = ctk.CTkToplevel(self)
         dialog.title("Pomodoro Settings")
-        dialog.geometry("320x240")
+        dialog.geometry("360x280")
         dialog.resizable(False, False)
-        dialog.configure(fg_color=Colors.BG)
+        dialog.configure(fg_color=self.theme.bg)
         dialog.transient(self.winfo_toplevel())
         dialog.grab_set()
 
         # Center on parent
         dialog.update_idletasks()
-        x = self.winfo_toplevel().winfo_x() + 300
+        x = self.winfo_toplevel().winfo_x() + 350
         y = self.winfo_toplevel().winfo_y() + 200
         dialog.geometry(f"+{x}+{y}")
 
         ctk.CTkLabel(
             dialog,
             text="⚙  Timer Settings",
-            font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
-            text_color=Colors.ACCENT,
-        ).pack(pady=(16, 12))
+            font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"),
+            text_color=self.theme.accent,
+        ).pack(pady=(20, 16))
 
         # Work duration
         work_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        work_frame.pack(fill="x", padx=24, pady=4)
+        work_frame.pack(fill="x", padx=28, pady=6)
         ctk.CTkLabel(
             work_frame, text="Work duration (min):",
-            font=ctk.CTkFont(size=13), text_color=Colors.TEXT,
+            font=ctk.CTkFont(size=14), text_color=self.theme.text,
         ).pack(side="left")
         work_var = ctk.StringVar(value=str(self.work_duration // 60))
         work_entry = ctk.CTkEntry(
-            work_frame, textvariable=work_var, width=60,
-            fg_color=Colors.SURFACE, border_color=Colors.BORDER,
-            text_color=Colors.TEXT,
+            work_frame, textvariable=work_var, width=70,
+            fg_color=self.theme.surface, border_color=self.theme.border,
+            text_color=self.theme.text, corner_radius=8,
         )
         work_entry.pack(side="right")
 
         # Break duration
         break_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        break_frame.pack(fill="x", padx=24, pady=4)
+        break_frame.pack(fill="x", padx=28, pady=6)
         ctk.CTkLabel(
             break_frame, text="Break duration (min):",
-            font=ctk.CTkFont(size=13), text_color=Colors.TEXT,
+            font=ctk.CTkFont(size=14), text_color=self.theme.text,
         ).pack(side="left")
         break_var = ctk.StringVar(value=str(self.break_duration // 60))
         break_entry = ctk.CTkEntry(
-            break_frame, textvariable=break_var, width=60,
-            fg_color=Colors.SURFACE, border_color=Colors.BORDER,
-            text_color=Colors.TEXT,
+            break_frame, textvariable=break_var, width=70,
+            fg_color=self.theme.surface, border_color=self.theme.border,
+            text_color=self.theme.text, corner_radius=8,
         )
         break_entry.pack(side="right")
 
@@ -401,12 +426,12 @@ class PomodoroTimer(ctk.CTkFrame):
         ctk.CTkButton(
             dialog,
             text="Save",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color=Colors.ACCENT,
-            hover_color=Colors.ACCENT_SOFT,
-            text_color="#1e1e2e",
-            width=120,
-            height=36,
-            corner_radius=10,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color=self.theme.accent,
+            hover_color=self.theme.accent_soft,
+            text_color="#0a0a14",
+            width=140,
+            height=40,
+            corner_radius=20,
             command=save,
-        ).pack(pady=16)
+        ).pack(pady=20)

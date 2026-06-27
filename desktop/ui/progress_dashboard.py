@@ -1,13 +1,10 @@
 """
 Progress Dashboard — dual progress ring indicators.
 
-Displays Macro Progress % and Micro Progress % as animated arc rings.
-Always visible between the navbar and content area.
-
-Color transitions:
-- 0-33%: amber (#d4a853)
-- 34-66%: soft blue (#6ba3d6)
-- 67-100%: sage green (#7cb899)
+Premium glass-panel design showing:
+- Macro Progress % and Micro Progress % as animated arc rings
+- Glass container with border glow
+- Color transitions based on completion percentage
 """
 
 import customtkinter as ctk
@@ -15,37 +12,27 @@ import tkinter as tk
 import math
 
 
-class Colors:
-    BG = "#1e1e2e"
-    SURFACE = "#2a2a3e"
-    ACCENT = "#d4a853"
-    TEXT = "#f0e9d6"
-    TEXT_SEC = "#a0998a"
-    SUCCESS = "#7cb899"
-    BLUE_MID = "#6ba3d6"
-    BORDER = "#3a3a52"
-
-
-def get_progress_color(pct):
+def get_progress_color(pct, theme):
     """Return color based on progress percentage."""
     if pct <= 33:
-        return Colors.ACCENT   # Amber
+        return theme.accent    # Accent color
     elif pct <= 66:
-        return Colors.BLUE_MID  # Soft blue
+        return theme.blue      # Soft blue
     else:
-        return Colors.SUCCESS   # Sage green
+        return theme.success   # Sage green
 
 
 class ProgressRing(ctk.CTkFrame):
-    """A single progress ring with percentage display."""
+    """A single progress ring with percentage display — glass themed."""
 
-    def __init__(self, parent, title="Progress", subtitle="", size=100):
+    def __init__(self, parent, title="Progress", subtitle="", size=110, theme=None):
         super().__init__(parent, fg_color="transparent")
 
+        self.theme = theme
         self._target_pct = 0.0
         self._current_pct = 0.0
         self._size = size
-        self._line_width = 8
+        self._line_width = 6
         self._animating = False
 
         # Canvas for the arc
@@ -53,7 +40,7 @@ class ProgressRing(ctk.CTkFrame):
             self,
             width=size,
             height=size,
-            bg=Colors.SURFACE,
+            bg=theme.surface,
             highlightthickness=0,
         )
         self.canvas.pack(pady=(8, 2))
@@ -62,8 +49,8 @@ class ProgressRing(ctk.CTkFrame):
         self.pct_label = ctk.CTkLabel(
             self,
             text="0%",
-            font=ctk.CTkFont(family="Consolas", size=20, weight="bold"),
-            text_color=Colors.TEXT,
+            font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"),
+            text_color=theme.text,
             fg_color="transparent",
         )
         self.pct_label.place(relx=0.5, rely=0.42, anchor="center")
@@ -72,8 +59,8 @@ class ProgressRing(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(
             self,
             text=title,
-            font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold"),
-            text_color=Colors.TEXT,
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text_color=theme.text,
             fg_color="transparent",
         )
         self.title_label.pack(pady=(0, 0))
@@ -82,8 +69,8 @@ class ProgressRing(ctk.CTkFrame):
         self.subtitle_label = ctk.CTkLabel(
             self,
             text=subtitle,
-            font=ctk.CTkFont(family="Segoe UI", size=10),
-            text_color=Colors.TEXT_SEC,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=theme.text_sec,
             fg_color="transparent",
         )
         self.subtitle_label.pack(pady=(0, 4))
@@ -95,14 +82,14 @@ class ProgressRing(ctk.CTkFrame):
         """Draw the progress arc ring."""
         self.canvas.delete("all")
 
-        pad = self._line_width + 4
+        pad = self._line_width + 6
         s = self._size
 
         # Background ring (track)
         self.canvas.create_arc(
             pad, pad, s - pad, s - pad,
             start=90, extent=-360,
-            outline=Colors.BORDER,
+            outline=self.theme.border,
             width=self._line_width,
             style="arc",
         )
@@ -110,7 +97,7 @@ class ProgressRing(ctk.CTkFrame):
         # Progress arc
         if pct > 0:
             extent = -(pct / 100) * 360
-            color = get_progress_color(pct)
+            color = get_progress_color(pct, self.theme)
             self.canvas.create_arc(
                 pad, pad, s - pad, s - pad,
                 start=90, extent=extent,
@@ -134,7 +121,7 @@ class ProgressRing(ctk.CTkFrame):
             self._current_pct = self._target_pct
             self._draw_ring(self._current_pct)
             self.pct_label.configure(text=f"{int(self._current_pct)}%")
-            color = get_progress_color(self._current_pct)
+            color = get_progress_color(self._current_pct, self.theme)
             self.pct_label.configure(text_color=color)
             self._animating = False
             return
@@ -143,19 +130,27 @@ class ProgressRing(ctk.CTkFrame):
         self._current_pct += diff * 0.15
         self._draw_ring(self._current_pct)
         self.pct_label.configure(text=f"{int(self._current_pct)}%")
-        color = get_progress_color(self._current_pct)
+        color = get_progress_color(self._current_pct, self.theme)
         self.pct_label.configure(text_color=color)
 
         self.after(30, self._animate)
 
 
 class ProgressDashboard(ctk.CTkFrame):
-    """Dashboard strip showing Macro and Micro progress rings side by side."""
+    """Dashboard strip showing Macro and Micro progress — glass panel."""
 
-    def __init__(self, parent, data_manager):
-        super().__init__(parent, fg_color=Colors.SURFACE, corner_radius=12, height=150)
+    def __init__(self, parent, data_manager, theme):
+        super().__init__(
+            parent,
+            fg_color=theme.surface,
+            corner_radius=14,
+            height=155,
+            border_width=1,
+            border_color=theme.border,
+        )
         self.pack_propagate(False)
         self.data_manager = data_manager
+        self.theme = theme
 
         # Container for rings
         inner = ctk.CTkFrame(self, fg_color="transparent")
@@ -167,14 +162,15 @@ class ProgressDashboard(ctk.CTkFrame):
             title="Macro Progress",
             subtitle="Study & Tasks",
             size=110,
+            theme=theme,
         )
-        self.macro_ring.pack(side="left", padx=40)
+        self.macro_ring.pack(side="left", padx=50)
 
         # Divider
         divider = ctk.CTkFrame(
-            inner, fg_color=Colors.BORDER, width=1, height=80
+            inner, fg_color=theme.border, width=1, height=80
         )
-        divider.pack(side="left", padx=20, pady=20)
+        divider.pack(side="left", padx=24, pady=20)
 
         # Micro ring
         self.micro_ring = ProgressRing(
@@ -182,8 +178,9 @@ class ProgressDashboard(ctk.CTkFrame):
             title="Micro Progress",
             subtitle="Daily Habits",
             size=110,
+            theme=theme,
         )
-        self.micro_ring.pack(side="left", padx=40)
+        self.micro_ring.pack(side="left", padx=50)
 
         # Initial update
         self.update_progress()
