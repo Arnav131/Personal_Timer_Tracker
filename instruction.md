@@ -1,73 +1,33 @@
-# Productivity Enforcer — Setup & Instructions
+# Productivity Enforcer — quick instructions
 
-A premium productivity web application featuring a Pomodoro timer, macro/micro task management, glassmorphism UI with customizable pixel art backgrounds, and an hourly accountability enforcer.
+## Run locally
 
-## 🚀 Prerequisites
-
-- **Node.js 18+** — Download from [nodejs.org](https://nodejs.org/)
-
-## ⚙️ Installation
-
-```bash
-cd web
-npm install
-```
-
-## ▶️ Running the Application
-
-```bash
-cd web
+```powershell
+Copy-Item .\web\.env.example .\web\.env.local
+# Add the public Supabase URL and publishable key to web/.env.local
+cd .\web
+npm ci
 npm run dev
 ```
 
-Then open **http://localhost:5173** in your browser.
+Open `http://localhost:5173`.
 
-## 🎨 Customizing Your Experience
+## Use the app
 
-**Changing Backgrounds & Themes:**
-- Click the **⚙ (Gear Icon)** in the top right corner of the navigation bar to open Settings.
-- Select from the bundled pixel art backgrounds (Ramen Shop, Cozy Study Room, Rainy Rooftop, Moonlit Garden).
-- Or, click **"Load Custom Image"** to upload any `.png` or `.jpg` from your computer.
-- The application automatically analyzes your chosen background and adapts its UI accent colors to match!
+- Add study/work items under **Macro Tasks**.
+- Track and edit recurring habits under **Micro Tasks**.
+- Configure work and break durations from the Pomodoro settings icon.
+- Use the top-bar PDF button to download today's report.
+- Use the main settings icon for backgrounds, panel transparency, browser reminder permission, and manual daily reset.
 
-## 💡 How to Use the App
+## Data behavior
 
-### 1. Macro Tasks (Study & Projects)
-- Add tasks you want to accomplish in the To-Do List.
-- Use the **Pomodoro Timer** (right side) to track your focus sessions.
-- Click the ⚙ icon inside the Pomodoro panel to adjust Work and Break durations.
+- Guests use tab-scoped `sessionStorage`; task data disappears when the tab closes.
+- Google users save today's state to the protected Supabase database.
+- Daily tasks and progress reset at the user's local midnight. Habit definitions and timer durations remain.
+- At 11:45 PM, an open page offers to download the PDF before reset.
 
-### 2. Micro Tasks (Daily Habits)
-- Click the **⚡ Micro Tasks** toggle at the top to switch modes.
-- Track recurring daily habits (drinking water, pushups, etc.).
-- Click **✏ Edit** to rename, delete, or add new habits.
+## Complete production setup
 
-### 3. The Enforcer (Accountability)
-- Every hour, an overlay will appear with an alarm.
-- You must type at least 15 characters explaining what you worked on to dismiss it.
-
-### 4. Progress & PDF Export
-- Your progress is visualized in the dual rings at the top of the screen.
-- Click **📥 PDF** in the navbar to download a daily productivity report.
-
-## 📁 Where is my Data Saved?
-
-All data is stored in your browser's **localStorage** — no server or cloud storage needed. Data persists across browser sessions and automatically resets daily (with backups).
-
-## 🚀 Deploying for Public Use
-
-Build a production bundle:
-```bash
-cd web
-npm run build
-```
-
-This creates a `dist/` folder that can be deployed to:
-- **GitHub Pages**
-- **Vercel** (just connect your repo)
-- **Netlify**
-- Any static file hosting
-
-## 📂 Old Desktop Version
-
-The original Python/CustomTkinter desktop app is preserved in the `desktop/` folder for reference.
+1. Follow `GOOGLE_AUTH_SETUP.md` for Supabase, database security, and Google OAuth.
+2. Follow `NETLIFY_DOCKER_GITHUB_ACTIONS.md` for Docker and automated Netlify deployments.

@@ -1,87 +1,58 @@
 # Productivity Enforcer
 
-## Run the application
+A React productivity dashboard with macro tasks, editable daily habits, Pomodoro sessions, accountability prompts, PDF reports, Google sign-in, and optional cloud persistence.
 
-Open a terminal in the project directory and run these commands:
+## Persistence rules
+
+- **Guest:** task and habit data uses `sessionStorage`, so it survives refreshes in the same tab but is removed when that tab is closed.
+- **Signed in with Google:** today's state is saved in Supabase and can be reopened on another browser or device.
+- **Midnight:** macro tasks, habit checks, Pomodoro session count, and accountability logs reset at the user's local midnight. Habit definitions and chosen timer durations remain.
+- **Manual reset:** Settings includes a confirmation-protected **Reset today** button.
+- **11:45 PM:** an open app displays a PDF reminder. If browser notifications were enabled in Settings, it also sends a system notification. Browsers cannot reliably schedule this notification after the page is completely closed.
+
+## First-time setup
+
+Follow both guides in order:
+
+1. [Google sign-in and Supabase database setup](GOOGLE_AUTH_SETUP.md)
+2. [Netlify deployment with Docker and GitHub Actions](NETLIFY_DOCKER_GITHUB_ACTIONS.md)
+
+The database schema is in [`supabase/schema.sql`](supabase/schema.sql).
+
+## Run locally
 
 ```powershell
+Copy-Item .\web\.env.example .\web\.env.local
+# Fill in the two public Supabase values in web/.env.local
 cd .\web
-npm install
+npm ci
 npm run dev
 ```
 
-Then open [http://localhost:5173](http://localhost:5173) in your browser. Keep the terminal open while the application is running. Press `Ctrl+C` to stop it.
+Open [http://localhost:5173](http://localhost:5173). Without the Supabase variables, the app still runs in guest mode and the Google button remains disabled.
 
-## About
-
-Productivity Enforcer is a focused productivity dashboard that combines task management, daily habits, Pomodoro sessions, progress tracking, and accountability reminders in a customizable glass-style interface.
-
-## Features
-
-- Macro task management for study, work, and project goals
-- Configurable Pomodoro work and break sessions
-- Daily micro-task and habit tracking
-- Visual progress dashboard
-- Hourly accountability prompts
-- PDF productivity report export
-- Bundled and custom background images
-- Smooth panel transparency and blur controls
-- Automatic accent colors based on the selected background
-- Local, persistent data with no account or cloud service required
-
-## Data and privacy
-
-Application data stays on your device:
-
-- Tasks, settings, and daily progress are stored in browser `localStorage`.
-- Custom background images are stored in browser IndexedDB to support larger files reliably.
-- Daily activity resets automatically, with previous-day data backed up locally.
-
-Clearing this site's browser storage will remove the saved application data and custom backgrounds.
-
-## Requirements
-
-- [Node.js](https://nodejs.org/) 18 or newer
-- npm (included with Node.js)
-- A modern browser with IndexedDB support
-
-## Available commands
-
-Run these commands from the `web` directory:
-
-```powershell
-npm run dev      # Start the development server
-npm run build    # Create a production build
-npm run preview  # Preview the production build
-npm run lint     # Check the source code
-```
-
-## Project structure
-
-```text
-Personal_Timer_Tracker/
-├── assets/          # Shared images and audio
-├── desktop/         # Preserved Python desktop version
-└── web/             # React web application
-    ├── public/      # Bundled backgrounds and static assets
-    └── src/         # Components, hooks, styles, and utilities
-```
-
-## Production build
+## Verify
 
 ```powershell
 cd .\web
-npm install
+npm test
+npm run lint
 npm run build
 ```
 
-The optimized application will be generated in `web/dist`. It can be hosted on services such as GitHub Pages, Netlify, or Vercel, or on any static web server.
+## Main project files
 
-## Technology
+```text
+Personal_Timer_Tracker/
+├── .github/workflows/netlify.yml    # Test/build/deploy automation
+├── supabase/schema.sql              # Protected per-user database table
+├── netlify.toml                     # Netlify build and SPA routing
+├── web/                             # React/Vite web application
+│   ├── Dockerfile                   # Reproducible build and optional Nginx image
+│   ├── .env.example                 # Safe configuration template
+│   └── src/                         # Components, auth, storage, and utilities
+├── GOOGLE_AUTH_SETUP.md
+└── NETLIFY_DOCKER_GITHUB_ACTIONS.md
+```
 
-- React 19
-- Vite
-- CSS glassmorphism design system
-- IndexedDB and localStorage
-- jsPDF
-
+The preserved `desktop/` folder is the original Python desktop version; cloud authentication and Netlify deployment apply to the `web/` application.

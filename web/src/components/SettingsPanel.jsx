@@ -10,6 +10,10 @@ export default function SettingsPanel({
   addCustomBackground,
   panelTransparency,
   setPanelTransparency,
+  onResetDay,
+  notificationPermission,
+  onEnableNotifications,
+  user,
   onClose,
 }) {
   const fileRef = useRef(null);
@@ -79,6 +83,34 @@ export default function SettingsPanel({
               <span>Transparent</span>
             </div>
           </div>
+        </div>
+
+        <div className="settings-card__section">Account & daily data</div>
+        <div className="settings-data-card">
+          <div>
+            <strong>{user ? 'Cloud saving is on' : 'Guest session'}</strong>
+            <p>
+              {user
+                ? `Signed in as ${user.email}. Today’s work follows you across devices.`
+                : 'Tasks are kept only in this browser tab. Sign in from the top bar for cloud saving.'}
+            </p>
+          </div>
+          <button className="btn-pill btn-pill--danger btn-pill--sm" onClick={onResetDay}>
+            Reset today
+          </button>
+        </div>
+
+        <div className="settings-card__section">11:45 PM report reminder</div>
+        <div className="settings-data-card">
+          <div>
+            <strong>Browser notification: {notificationPermission}</strong>
+            <p>An in-app reminder appears at 11:45 PM whenever this page is open.</p>
+          </div>
+          {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+            <button className="btn-pill btn-pill--ghost btn-pill--sm" onClick={onEnableNotifications}>
+              Enable alerts
+            </button>
+          )}
         </div>
 
         <div className="settings-actions">

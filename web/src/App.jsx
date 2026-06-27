@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useDailyData, useMicroConfig } from './hooks/useLocalStorage';
+import { useAuth } from './context/AuthContext';
+import { useProductivityData } from './hooks/useProductivityData';
+import { useNightlyReminder } from './hooks/useNightlyReminder';
 import { useTimer } from './hooks/useTimer';
 import { useTheme } from './hooks/useTheme';
 import { useEnforcer } from './hooks/useEnforcer';
@@ -15,10 +17,20 @@ import MicroView from './components/MicroView';
 import BreakPrompt from './components/BreakPrompt';
 import EnforcerModal from './components/EnforcerModal';
 import SettingsPanel from './components/SettingsPanel';
+import NightlyReminder from './components/NightlyReminder';
 
 export default function App() {
-  const [data, setData] = useDailyData();
-  const [microConfig, setMicroConfig] = useMicroConfig();
+  const auth = useAuth();
+  const {
+    data,
+    setData,
+    microConfig,
+    setMicroConfig,
+    loading: dataLoading,
+    syncStatus,
+    syncError,
+    resetDay,
+  } = useProductivityData(auth.user, auth.loading);
   const { bgUrl, allBackgrounds, setBackground, addCustomBackground, panelTransparency, setPanelTransparency } = useTheme();
   const { showEnforcer, resetTimer: resetEnforcer } = useEnforcer();
 
@@ -84,6 +96,27 @@ export default function App() {
     generatePDF(data, microConfig);
   }, [data, microConfig]);
 
+  const reminder = useNightlyReminder();
+
+  const handleManualReset = useCallback(() => {
+    const confirmed = window.confirm(
+      'Reset all of today’s tasks, progress, Pomodoro sessions, and logs? This cannot be undone.',
+    );
+    if (!confirmed) return false;
+    resetDay();
+    setShowSettings(false);
+    return true;
+  }, [resetDay]);
+
+  if (auth.loading || dataLoading) {
+    return (
+      <div className="startup-screen">
+        <div className="startup-screen__spinner" />
+        <div>Loading your productivity day…</div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Background Layer */}
@@ -97,7 +130,13 @@ export default function App() {
         <Navbar
           onSettings={() => setShowSettings(true)}
           onPdf={handlePdf}
+          auth={auth}
+          syncStatus={syncStatus}
         />
+
+        {(auth.error || syncError) && (
+          <div className="sync-error" role="alert">{auth.error || syncError}</div>
+        )}
 
         {/* Mode Toggle */}
         <div className="mode-toggle">
@@ -165,8 +204,16 @@ export default function App() {
           addCustomBackground={addCustomBackground}
           panelTransparency={panelTransparency}
           setPanelTransparency={setPanelTransparency}
+          onResetDay={handleManualReset}
+          notificationPermission={reminder.permission}
+          onEnableNotifications={reminder.requestPermission}
+          user={auth.user}
           onClose={() => setShowSettings(false)}
         />
+      )}
+
+      {reminder.showReminder && (
+        <NightlyReminder onDownload={handlePdf} onIgnore={reminder.dismissReminder} />
       )}
 
       {/* Pomodoro Settings Dialog */}

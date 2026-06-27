@@ -1,4 +1,6 @@
-# Coding Agent Prompt — Local Productivity Enforcer v2.0
+# Coding Agent Prompt — Local Productivity Enforcer
+
+## This is to help you through production of app. 
 
 ## Your Role
 You are building a **personal desktop productivity application** for a single user named Arnav. This is a fully local, offline application — no cloud, no network, no authentication. You will implement every feature described below exactly as specified. Do not simplify, stub out, or defer any feature. This is the complete spec.

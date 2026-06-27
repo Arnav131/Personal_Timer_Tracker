@@ -1,8 +1,8 @@
 # Software Requirements Specification (SRS)
 ## Project: Local Productivity Enforcer — v2.0
-**Author:** Arnav  
-**Date:** June 2026  
-**Status:** Updated — Major Feature Expansion
+***Author:*** Arnav  
+***Date:*** June 2026  
+***Status:*** Updated — Major Feature Expansion
 
 ---
 

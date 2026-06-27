@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function Navbar({ onSettings, onPdf }) {
+export default function Navbar({ onSettings, onPdf, auth, syncStatus }) {
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -21,6 +21,25 @@ export default function Navbar({ onSettings, onPdf }) {
       <span className="navbar__title">✦  Productivity Enforcer</span>
       <span className="navbar__time">{time}</span>
       <div className="navbar__actions">
+        <span className="navbar__sync" title={syncStatus}>{syncStatus}</span>
+        {auth.user ? (
+          <div className="account-chip" title={auth.user.email || 'Signed in'}>
+            {auth.user.user_metadata?.avatar_url && (
+              <img src={auth.user.user_metadata.avatar_url} alt="" referrerPolicy="no-referrer" />
+            )}
+            <span>{auth.user.user_metadata?.full_name?.split(' ')[0] || 'Account'}</span>
+            <button onClick={auth.signOut} title="Sign out">Sign out</button>
+          </div>
+        ) : (
+          <button
+            className="btn-pill btn-pill--ghost btn-pill--sm"
+            onClick={auth.signInWithGoogle}
+            disabled={!auth.configured}
+            title={auth.configured ? 'Save tasks with your Google account' : 'Configure Supabase to enable sign-in'}
+          >
+            <span className="google-mark">G</span> Sign in
+          </button>
+        )}
         <button className="btn-pill btn-pill--accent btn-pill--sm" onClick={onPdf}>
           📥 PDF
         </button>
