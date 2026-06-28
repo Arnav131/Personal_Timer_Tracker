@@ -94,16 +94,16 @@ html, body, #root {
 /* ── Glass Panel (Core Component) ── */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   transition: all var(--transition), background 0.25s ease;
 }
 .glass-surface {
   background: var(--glass-surface);
-  backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   transition: all var(--transition), background 0.25s ease;
@@ -119,8 +119,8 @@ html, body, #root {
   padding: 0 20px;
   height: 52px;
   background: var(--glass-surface);
-  backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
   border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
   z-index: 10;
@@ -286,8 +286,8 @@ html, body, #root {
   padding: 4px;
   border-radius: 14px;
   background: var(--glass-surface);
-  backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   width: fit-content;
   margin: 12px auto 0;
@@ -880,8 +880,8 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease;
 }
 .modal-card {
@@ -953,8 +953,8 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease;
 }
 .settings-card {
