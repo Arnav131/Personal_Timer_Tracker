@@ -1208,6 +1208,10 @@ html, body, #root {
     width: 220px;
     height: 220px;
   }
+  .pomodoro__svg {
+    width: 100%;
+    height: 100%;
+  }
   .pomodoro__time {
     font-size: 40px;
   }
@@ -1262,12 +1266,30 @@ html, body, #root {
     gap: 6px;
     padding: 8px 12px;
   }
-  .navbar__time,
   .navbar__sync,
   .account-chip span {
     display: none;
   }
   .navbar__actions { margin-left: auto; }
+  .navbar__time {
+    order: 3;
+    display: flex;
+    flex: 0 0 100%;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    margin: 2px 0 0;
+    padding: 5px 10px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: rgba(var(--accent-rgb), 0.08);
+    color: var(--text-sec);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    text-align: center;
+    white-space: nowrap;
+  }
   .settings-data-card {
     align-items: stretch;
     flex-direction: column;
