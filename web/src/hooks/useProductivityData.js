@@ -165,6 +165,7 @@ export function useProductivityData(user, authLoading) {
 
   const resetDay = useCallback(() => {
     setData(current => createFreshDailyData(getLocalDateKey(), current));
+    setMicroConfig(normalizeMicroConfig(null));
   }, []);
 
   useEffect(() => {
