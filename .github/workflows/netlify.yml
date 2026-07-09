@@ -48,6 +48,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for Netlify CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Validate deployment secrets
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -79,6 +84,11 @@ jobs:
             --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}" \
             --output type=local,dest=web/dist \
             ./web
+
+      - name: Validate exported site
+        run: |
+          test -f web/dist/index.html
+          find web/dist -maxdepth 2 -type f | sort | head -40
 
       - name: Deploy production files to Netlify
         env:
