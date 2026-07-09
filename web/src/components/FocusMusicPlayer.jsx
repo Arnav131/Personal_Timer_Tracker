@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { deleteTrack, getTracks, saveTrack } from '../utils/musicStore';
+import PixelIcon from './PixelIcon';
 
 const DEFAULT_TRACKS = [
   {
@@ -59,6 +60,11 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
   const fileInputRef = useRef(null);
   const audioRef = useRef(null);
   const objectUrlsRef = useRef(new Set());
+  const isPlayingRef = useRef(false);
+  const activeTrackRef = useRef(null);
+  const resumeOnReturnRef = useRef(false);
+  const wasBackgroundedWhilePlayingRef = useRef(false);
+
   const [tracks, setTracks] = useState(DEFAULT_TRACKS);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -70,6 +76,25 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
   });
 
   const activeTrack = tracks[activeIndex] || null;
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    activeTrackRef.current = activeTrack;
+  }, [activeTrack]);
+
+  const requestPlayback = useCallback((markStoppedOnFailure = true) => {
+    const audio = audioRef.current;
+    if (!audio || !activeTrackRef.current) return;
+
+    audio.play().catch(() => {
+      if (markStoppedOnFailure && document.visibilityState === 'visible') {
+        setIsPlaying(false);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,7 +134,9 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
     audio.volume = volume;
     try {
       localStorage.setItem('pe_music_volume', String(volume));
-    } catch { /* Volume still works when browser storage is unavailable. */ }
+    } catch {
+      // Volume still works when browser storage is unavailable.
+    }
   }, [volume]);
 
   useEffect(() => {
@@ -121,12 +148,69 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
       return;
     }
 
-    audio.play().catch(() => setIsPlaying(false));
-  }, [activeTrack, isPlaying]);
+    requestPlayback();
+  }, [activeTrack, isPlaying, requestPlayback]);
 
   useEffect(() => {
-    if (pauseSignal > 0) setIsPlaying(false);
-  }, [pauseSignal]);
+    const resumeIfExpected = () => {
+      if (document.visibilityState !== 'visible') {
+        if (isPlayingRef.current) {
+          wasBackgroundedWhilePlayingRef.current = true;
+        }
+        return;
+      }
+      const audio = audioRef.current;
+      if (!audio || !activeTrackRef.current) return;
+
+      if (resumeOnReturnRef.current) {
+        resumeOnReturnRef.current = false;
+        wasBackgroundedWhilePlayingRef.current = false;
+        setIsPlaying(true);
+        requestPlayback(false);
+        return;
+      }
+
+      if (isPlayingRef.current && audio.paused) {
+        requestPlayback(false);
+      }
+    };
+
+    const handleVisibility = () => resumeIfExpected();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', resumeIfExpected);
+    window.addEventListener('pageshow', resumeIfExpected);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', resumeIfExpected);
+      window.removeEventListener('pageshow', resumeIfExpected);
+    };
+  }, [requestPlayback]);
+
+  useEffect(() => {
+    if (pauseSignal <= 0) return;
+    let resumeTimer;
+    const shouldResumeAfterPause = isPlayingRef.current
+      && (document.visibilityState !== 'visible' || wasBackgroundedWhilePlayingRef.current);
+
+    if (shouldResumeAfterPause) {
+      resumeOnReturnRef.current = true;
+      if (document.visibilityState === 'visible') {
+        resumeTimer = window.setTimeout(() => {
+          if (!resumeOnReturnRef.current || !activeTrackRef.current) return;
+          resumeOnReturnRef.current = false;
+          wasBackgroundedWhilePlayingRef.current = false;
+          setIsPlaying(true);
+          requestPlayback(false);
+        }, 350);
+      }
+    }
+    setIsPlaying(false);
+    return () => {
+      if (resumeTimer) window.clearTimeout(resumeTimer);
+    };
+  }, [pauseSignal, requestPlayback]);
 
   const handleUpload = async (event) => {
     const selected = Array.from(event.target.files || []);
@@ -167,6 +251,8 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
       fileInputRef.current?.click();
       return;
     }
+    resumeOnReturnRef.current = false;
+    wasBackgroundedWhilePlayingRef.current = false;
     setIsPlaying(previous => !previous);
   };
 
@@ -179,6 +265,8 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
     if (!activeTrack) return;
     const removedIndex = activeIndex;
     const removed = activeTrack;
+    resumeOnReturnRef.current = false;
+    wasBackgroundedWhilePlayingRef.current = false;
     setIsPlaying(false);
 
     try {
@@ -204,13 +292,23 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
         </div>
         <div className="music-player__actions">
           {activeTrack && !activeTrack.bundled && (
-            <button type="button" className="music-player__small-btn" onClick={removeActiveTrack}
-              title="Remove current track" aria-label="Remove current track">
-              &minus;
+            <button
+              type="button"
+              className="music-player__small-btn"
+              onClick={removeActiveTrack}
+              title="Remove current track"
+              aria-label="Remove current track"
+            >
+              -
             </button>
           )}
-          <button type="button" className="music-player__add-btn"
-            onClick={() => fileInputRef.current?.click()} title="Add MP3 files" aria-label="Add MP3 files">
+          <button
+            type="button"
+            className="music-player__add-btn"
+            onClick={() => fileInputRef.current?.click()}
+            title="Add MP3 files"
+            aria-label="Add MP3 files"
+          >
             +
           </button>
         </div>
@@ -218,19 +316,34 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
 
       <div className="music-player__main">
         <div className="music-player__controls">
-          <button type="button" className="music-player__skip" onClick={() => changeTrack(-1)}
-            disabled={tracks.length < 2} title="Previous track" aria-label="Previous track">
+          <button
+            type="button"
+            className="music-player__skip"
+            onClick={() => changeTrack(-1)}
+            disabled={tracks.length < 2}
+            title="Previous track"
+            aria-label="Previous track"
+          >
             <PreviousIcon />
           </button>
 
-          <button type="button" className={`music-player__play ${isPlaying ? 'music-player__play--active' : ''}`}
+          <button
+            type="button"
+            className={`music-player__play ${isPlaying ? 'music-player__play--active' : ''}`}
             onClick={togglePlayback}
-            aria-label={isPlaying ? 'Pause music' : activeTrack ? 'Play music' : 'Add MP3 files'}>
+            aria-label={isPlaying ? 'Pause music' : activeTrack ? 'Play music' : 'Add MP3 files'}
+          >
             <PlaybackIcon paused={!isPlaying} />
           </button>
 
-          <button type="button" className="music-player__skip" onClick={() => changeTrack(1)}
-            disabled={tracks.length < 2} title="Next track" aria-label="Next track">
+          <button
+            type="button"
+            className="music-player__skip"
+            onClick={() => changeTrack(1)}
+            disabled={tracks.length < 2}
+            title="Next track"
+            aria-label="Next track"
+          >
             <NextIcon />
           </button>
         </div>
@@ -243,18 +356,33 @@ export default function FocusMusicPlayer({ pauseSignal = 0 }) {
       </div>
 
       <div className="music-player__volume">
-        <span className="music-player__volume-icon" aria-hidden="true">{volume === 0 ? '×' : '♪'}</span>
+        <span className="music-player__volume-icon" aria-hidden="true">
+          <PixelIcon name="music" size="xs" />
+        </span>
         <label htmlFor="focus-music-volume">Volume</label>
-        <input id="focus-music-volume" type="range" min="0" max="1" step="0.01" value={volume}
+        <input
+          id="focus-music-volume"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
           onChange={event => setVolume(Number(event.target.value))}
           style={{ '--volume-pct': `${volume * 100}%` }}
-          aria-valuetext={`${Math.round(volume * 100)} percent`} />
+          aria-valuetext={`${Math.round(volume * 100)} percent`}
+        />
         <span className="music-player__volume-value">{Math.round(volume * 100)}%</span>
       </div>
 
       {uploadError && <div className="music-player__error" role="alert">{uploadError}</div>}
-      <input ref={fileInputRef} className="music-player__file-input" type="file"
-        accept="audio/mpeg,.mp3" multiple onChange={handleUpload} />
+      <input
+        ref={fileInputRef}
+        className="music-player__file-input"
+        type="file"
+        accept="audio/mpeg,.mp3"
+        multiple
+        onChange={handleUpload}
+      />
       <audio ref={audioRef} src={activeTrack?.url || undefined} loop />
     </section>
   );

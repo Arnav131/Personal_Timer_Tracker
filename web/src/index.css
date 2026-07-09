@@ -127,6 +127,9 @@ html, body, #root {
   transition: background 0.25s ease;
 }
 .navbar__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 700;
   color: var(--accent);
@@ -175,6 +178,35 @@ html, body, #root {
   font: inherit;
 }
 .account-chip button:hover { color: var(--text); }
+.pixel-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  image-rendering: auto;
+  vertical-align: -0.18em;
+  pointer-events: none;
+  user-select: none;
+}
+.pixel-icon--xs {
+  width: 18px;
+  height: 18px;
+}
+.pixel-icon--sm {
+  width: 22px;
+  height: 22px;
+}
+.pixel-icon--md {
+  width: 28px;
+  height: 28px;
+}
+.pixel-icon--lg {
+  width: 34px;
+  height: 34px;
+}
+.pixel-icon--xl {
+  width: 44px;
+  height: 44px;
+}
 .google-mark {
   display: inline-grid;
   width: 18px;
@@ -201,9 +233,28 @@ html, body, #root {
   cursor: pointer;
   transition: all var(--transition-fast);
 }
+.icon-btn .pixel-icon {
+  width: 22px;
+  height: 22px;
+}
 .icon-btn:hover {
   background: var(--glass-hover);
   color: var(--text);
+}
+.icon-btn--settings-main {
+  width: 54px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+}
+.icon-btn--settings-main .pixel-icon {
+  width: 32px;
+  height: 32px;
+}
+.icon-btn--settings-main:hover {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: rgba(var(--accent-rgb), 0.32);
 }
 .icon-btn--danger:hover {
   background: var(--danger);
@@ -294,6 +345,10 @@ html, body, #root {
   transition: background 0.25s ease;
 }
 .mode-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 8px 28px;
   border: none;
   border-radius: 11px;
@@ -620,6 +675,9 @@ html, body, #root {
   padding: 16px 18px;
 }
 .task-panel__header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 17px;
   font-weight: 700;
   color: var(--accent);
@@ -715,10 +773,12 @@ html, body, #root {
   border-color: var(--accent);
 }
 .task-card__checkbox:checked::after {
-  content: '✓';
-  color: #0a0a14;
-  font-size: 13px;
-  font-weight: 700;
+  content: '';
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid #0a0a14;
+  border-bottom: 2px solid #0a0a14;
+  transform: rotate(-45deg) translate(1px, -1px);
 }
 .task-card__text {
   flex: 1;
@@ -744,6 +804,10 @@ html, body, #root {
   align-items: center;
   justify-content: center;
 }
+.task-card__delete .pixel-icon {
+  width: 15px;
+  height: 15px;
+}
 .task-card__delete:hover {
   background: var(--danger);
   color: #fff;
@@ -766,6 +830,9 @@ html, body, #root {
   margin-bottom: 8px;
 }
 .pomodoro__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 17px;
   font-weight: 700;
   color: var(--accent);
@@ -811,6 +878,9 @@ html, body, #root {
   margin-top: 6px;
 }
 .pomodoro__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 13px;
   color: var(--text-sec);
   margin-top: 4px;
@@ -841,6 +911,9 @@ html, body, #root {
   margin-bottom: 12px;
 }
 .micro-view__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 19px;
   font-weight: 700;
   color: var(--accent);
@@ -859,16 +932,64 @@ html, body, #root {
   margin-top: 12px;
   flex-shrink: 0;
 }
+.micro-view__list--empty {
+  align-items: center;
+  justify-content: center;
+  padding-right: 0;
+}
+.micro-view__starter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 420px);
+  padding: 24px;
+  border: 1px dashed var(--glass-border-accent);
+  border-radius: var(--radius);
+  background: rgba(10, 10, 20, 0.24);
+  text-align: center;
+}
+.micro-view__starter-title {
+  color: var(--text-sec);
+  font-size: 15px;
+  font-weight: 650;
+}
+.micro-view__starter-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.micro-view__starter-form .task-panel__input {
+  flex: none;
+  width: 100%;
+  text-align: center;
+}
+.micro-view__starter-add {
+  height: 50px;
+  padding: 0 28px;
+  font-size: 15px;
+}
 .micro-card__checkbox:checked {
   background: var(--success);
   border-color: var(--success);
 }
 .micro-card__done-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--success);
   font-size: 15px;
   font-weight: 700;
   margin-left: auto;
   margin-right: 4px;
+}
+.micro-edit-btn {
+  width: 38px;
+  min-width: 38px;
+  padding: 0;
+  margin-left: 4px;
 }
 
 /* ── Modal Overlay ── */
@@ -892,6 +1013,10 @@ html, body, #root {
   animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .modal-card__title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   font-size: 24px;
   font-weight: 700;
   color: var(--accent);
@@ -914,6 +1039,11 @@ html, body, #root {
 }
 
 /* ── Enforcer Modal ── */
+.enforcer-pixel {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
 .enforcer-textarea {
   width: 100%;
   min-height: 90px;
@@ -966,6 +1096,9 @@ html, body, #root {
   animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .settings-card__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 22px;
   font-weight: 700;
   color: var(--accent);
@@ -977,6 +1110,9 @@ html, body, #root {
   margin-bottom: 20px;
 }
 .settings-card__section {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 15px;
   font-weight: 600;
   color: var(--text);

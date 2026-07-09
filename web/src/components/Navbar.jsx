@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PixelIcon from './PixelIcon';
 
 export default function Navbar({ onSettings, onPdf, auth, syncStatus }) {
   const [time, setTime] = useState('');
@@ -9,7 +10,7 @@ export default function Navbar({ onSettings, onPdf, auth, syncStatus }) {
       const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       const date = now.toLocaleDateString('en-US', opts);
       const t = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      setTime(`${date}  •  ${t}`);
+      setTime(`${date} | ${t}`);
     };
     update();
     const id = setInterval(update, 1000);
@@ -18,7 +19,10 @@ export default function Navbar({ onSettings, onPdf, auth, syncStatus }) {
 
   return (
     <nav className="navbar">
-      <span className="navbar__title">✦  Productivity Enforcer</span>
+      <span className="navbar__title">
+        <PixelIcon name="star" size="sm" />
+        Productivity Enforcer
+      </span>
       <span className="navbar__time">{time}</span>
       <div className="navbar__actions">
         <span className="navbar__sync" title={syncStatus}>{syncStatus}</span>
@@ -41,9 +45,17 @@ export default function Navbar({ onSettings, onPdf, auth, syncStatus }) {
           </button>
         )}
         <button className="btn-pill btn-pill--accent btn-pill--sm" onClick={onPdf}>
-          📥 PDF
+          <PixelIcon name="download" size="xs" />
+          PDF
         </button>
-        <button className="icon-btn" onClick={onSettings} title="Settings">⚙</button>
+        <button
+          className="icon-btn icon-btn--settings-main"
+          onClick={onSettings}
+          title="Settings"
+          aria-label="Settings"
+        >
+          <PixelIcon name="gear" size="lg" />
+        </button>
       </div>
     </nav>
   );

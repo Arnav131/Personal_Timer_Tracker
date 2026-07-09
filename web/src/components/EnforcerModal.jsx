@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { playLoop, stopLoop } from '../utils/audioManager';
+import PixelIcon from './PixelIcon';
 
 /**
- * EnforcerModal — un-dismissable accountability popup.
+ * EnforcerModal - un-dismissable accountability popup.
  */
 export default function EnforcerModal({ onSubmit }) {
   const [text, setText] = useState('');
@@ -13,7 +14,6 @@ export default function EnforcerModal({ onSubmit }) {
   const charCount = text.trim().length;
   const isValid = charCount >= MIN_CHARS;
 
-  // Start alarm on mount
   useEffect(() => {
     playLoop();
     return () => stopLoop();
@@ -32,9 +32,11 @@ export default function EnforcerModal({ onSubmit }) {
   return (
     <div className="modal-overlay" style={{ zIndex: 200 }}>
       <div className="modal-card glass-surface" style={{ maxWidth: 520 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>✦</div>
+        <div className="enforcer-pixel">
+          <PixelIcon name="star" size="xl" />
+        </div>
         <div className="modal-card__title" style={{ fontSize: 18 }}>
-          ⏰  {now} — What did you accomplish this past hour?
+          {now} - What did you accomplish this past hour?
         </div>
         <div className="modal-card__subtitle">
           Write at least {MIN_CHARS} characters to dismiss this window.

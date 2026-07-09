@@ -18,6 +18,7 @@ import BreakPrompt from './components/BreakPrompt';
 import EnforcerModal from './components/EnforcerModal';
 import SettingsPanel from './components/SettingsPanel';
 import NightlyReminder from './components/NightlyReminder';
+import PixelIcon from './components/PixelIcon';
 
 export default function App() {
   const auth = useAuth();
@@ -40,20 +41,16 @@ export default function App() {
   const [showPomodoroSettings, setShowPomodoroSettings] = useState(false);
   const [musicPauseSignal, setMusicPauseSignal] = useState(0);
 
-  // Pomodoro timer
   const timer = useTimer(data.pomodoroWorkMin, data.pomodoroBreakMin);
   const { onComplete, startBreak, startWork } = timer;
 
-  // Timer completion handler
   useEffect(() => {
     onComplete((wasBreak) => {
       setMusicPauseSignal(signal => signal + 1);
       playOnce();
       if (wasBreak) {
-        // Break ended
         setShowBreakPrompt(true);
       } else {
-        // Work session ended — increment sessions
         setData(prev => ({
           ...prev,
           pomodoroSessions: prev.pomodoroSessions + 1,
@@ -63,7 +60,6 @@ export default function App() {
     });
   }, [onComplete, setData]);
 
-  // Break prompt actions
   const handleBreak = useCallback(() => {
     setShowBreakPrompt(false);
     startBreak();
@@ -79,7 +75,6 @@ export default function App() {
     startWork();
   }, [startWork]);
 
-  // Enforcer submit
   const handleEnforcerSubmit = useCallback((text) => {
     setData(prev => ({
       ...prev,
@@ -91,7 +86,6 @@ export default function App() {
     resetEnforcer();
   }, [setData, resetEnforcer]);
 
-  // PDF download
   const handlePdf = useCallback(() => {
     generatePDF(data, microConfig);
   }, [data, microConfig]);
@@ -100,7 +94,7 @@ export default function App() {
 
   const handleManualReset = useCallback(() => {
     const confirmed = window.confirm(
-      'Reset all of today’s tasks, progress, Pomodoro sessions, and logs? This cannot be undone.',
+      "Reset all of today's tasks, progress, Pomodoro sessions, and logs? This cannot be undone.",
     );
     if (!confirmed) return false;
     resetDay();
@@ -112,20 +106,18 @@ export default function App() {
     return (
       <div className="startup-screen">
         <div className="startup-screen__spinner" />
-        <div>Loading your productivity day…</div>
+        <div>Loading your productivity day...</div>
       </div>
     );
   }
 
   return (
     <>
-      {/* Background Layer */}
       <div
         className="app-background"
         style={{ backgroundImage: `url(${bgUrl})` }}
       />
 
-      {/* Main UI */}
       <div className="app-container">
         <Navbar
           onSettings={() => setShowSettings(true)}
@@ -138,30 +130,29 @@ export default function App() {
           <div className="sync-error" role="alert">{auth.error || syncError}</div>
         )}
 
-        {/* Mode Toggle */}
         <div className="mode-toggle">
           <button
             className={`mode-toggle__btn ${mode === 'macro' ? 'mode-toggle__btn--active' : ''}`}
             onClick={() => setMode('macro')}
           >
-            📚  Macro Tasks
+            <PixelIcon name="book" size="xs" />
+            Macro Tasks
           </button>
           <button
             className={`mode-toggle__btn ${mode === 'micro' ? 'mode-toggle__btn--active' : ''}`}
             onClick={() => setMode('micro')}
           >
-            ⚡  Micro Tasks
+            <PixelIcon name="bolt" size="xs" />
+            Micro Tasks
           </button>
         </div>
 
-        {/* Progress Dashboard */}
         <ProgressDashboard
           data={data}
           microConfig={microConfig}
           musicPauseSignal={musicPauseSignal}
         />
 
-        {/* Content Area */}
         <div className="content-area">
           {mode === 'macro' ? (
             <>
@@ -183,7 +174,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Modals */}
       {showBreakPrompt && (
         <BreakPrompt
           onBreak={handleBreak}
@@ -216,7 +206,6 @@ export default function App() {
         <NightlyReminder onDownload={handlePdf} onIgnore={reminder.dismissReminder} />
       )}
 
-      {/* Pomodoro Settings Dialog */}
       {showPomodoroSettings && (
         <PomodoroSettingsDialog
           data={data}
@@ -246,7 +235,10 @@ function PomodoroSettingsDialog({ data, setData, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card glass-surface" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-card__title" style={{ fontSize: 18 }}>⚙  Timer Settings</div>
+        <div className="modal-card__title" style={{ fontSize: 18 }}>
+          <PixelIcon name="gear" size="sm" />
+          Timer Settings
+        </div>
         <div className="modal-card__subtitle">Customize your Pomodoro durations</div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

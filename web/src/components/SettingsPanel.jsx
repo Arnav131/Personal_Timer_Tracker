@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
+import PixelIcon from './PixelIcon';
 
 /**
- * SettingsPanel — Background picker with thumbnails, custom upload, and panel transparency slider.
+ * SettingsPanel - Background picker with thumbnails, custom upload, and panel transparency slider.
  */
 export default function SettingsPanel({
   bgUrl,
@@ -40,10 +41,16 @@ export default function SettingsPanel({
   return (
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-card glass-surface" onClick={e => e.stopPropagation()}>
-        <div className="settings-card__title">⚙  Settings</div>
+        <div className="settings-card__title">
+          <PixelIcon name="gear" size="sm" />
+          Settings
+        </div>
         <div className="settings-card__subtitle">Choose a background to set the mood</div>
 
-        <div className="settings-card__section">🖼  Backgrounds</div>
+        <div className="settings-card__section">
+          <PixelIcon name="image" size="xs" />
+          Backgrounds
+        </div>
 
         <div className="settings-grid">
           {allBackgrounds.map((bg, i) => (
@@ -58,8 +65,10 @@ export default function SettingsPanel({
           ))}
         </div>
 
-        {/* Panel Transparency Slider */}
-        <div className="settings-card__section">🔲  Panel Transparency</div>
+        <div className="settings-card__section">
+          <PixelIcon name="transparency" size="xs" />
+          Panel Transparency
+        </div>
         <div className="transparency-slider">
           <div className="transparency-slider__header">
             <span className="transparency-slider__label">Background visibility</span>
@@ -91,11 +100,12 @@ export default function SettingsPanel({
             <strong>{user ? 'Cloud saving is on' : 'Guest session'}</strong>
             <p>
               {user
-                ? `Signed in as ${user.email}. Today’s work follows you across devices.`
+                ? `Signed in as ${user.email}. Today's work follows you across devices.`
                 : 'Tasks are kept only in this browser tab. Sign in from the top bar for cloud saving.'}
             </p>
           </div>
           <button className="btn-pill btn-pill--danger btn-pill--sm" onClick={onResetDay}>
+            <PixelIcon name="trash" size="xs" />
             Reset today
           </button>
         </div>
@@ -119,7 +129,14 @@ export default function SettingsPanel({
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
           >
-            {uploading ? 'Saving image…' : '📁  Load Custom Image'}
+            {uploading ? (
+              'Saving image...'
+            ) : (
+              <>
+                <PixelIcon name="folder" size="xs" />
+                Load Custom Image
+              </>
+            )}
           </button>
           <button className="btn-pill btn-pill--ghost" onClick={onClose}>
             Close

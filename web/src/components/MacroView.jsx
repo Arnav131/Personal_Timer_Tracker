@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
+import PixelIcon from './PixelIcon';
 
 /**
- * MacroView — Task list panel (left side of macro view).
+ * MacroView - Task list panel.
  */
 export default function MacroView({ data, setData }) {
   const [input, setInput] = useState('');
@@ -42,7 +43,10 @@ export default function MacroView({ data, setData }) {
 
   return (
     <div className="task-panel glass">
-      <div className="task-panel__header">📝  To-Do List</div>
+      <div className="task-panel__header">
+        <PixelIcon name="todo" size="sm" />
+        To-Do List
+      </div>
 
       <div className="task-panel__input-row">
         <input
@@ -53,12 +57,12 @@ export default function MacroView({ data, setData }) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <button className="task-panel__add-btn" onClick={addTask}>+</button>
+        <button className="task-panel__add-btn" onClick={addTask} aria-label="Add task">+</button>
       </div>
 
       <div className="task-panel__list">
         {data.macroTasks.length === 0 ? (
-          <div className="task-panel__empty">No tasks yet. Add one above!</div>
+          <div className="task-panel__empty">No tasks yet. Add one above.</div>
         ) : (
           data.macroTasks.map(task => (
             <div key={task.id} className="task-card">
@@ -71,7 +75,9 @@ export default function MacroView({ data, setData }) {
               <span className={`task-card__text ${task.done ? 'task-card__text--done' : ''}`}>
                 {task.text}
               </span>
-              <button className="task-card__delete" onClick={() => deleteTask(task.id)}>✕</button>
+              <button className="task-card__delete" onClick={() => deleteTask(task.id)} aria-label="Delete task">
+                <PixelIcon name="close" size="xs" />
+              </button>
             </div>
           ))
         )}

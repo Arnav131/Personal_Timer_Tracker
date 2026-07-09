@@ -3,7 +3,7 @@ import { getLocalDateKey } from './localDate.js';
 export const DEFAULT_WORK_MINUTES = 25;
 export const DEFAULT_BREAK_MINUTES = 10;
 
-export const DEFAULT_MICRO_TASKS = [
+const LEGACY_DEFAULT_MICRO_TASKS = [
   { id: 1, text: 'Apply hair serum' },
   { id: 2, text: 'Polish shoes' },
   { id: 3, text: '20 pushups' },
@@ -12,6 +12,12 @@ export const DEFAULT_MICRO_TASKS = [
   { id: 6, text: 'Skincare routine' },
   { id: 7, text: 'Drink 2L water' },
 ];
+
+const LEGACY_DEFAULT_MICRO_TEXT = new Set(
+  LEGACY_DEFAULT_MICRO_TASKS.map(task => task.text.toLowerCase()),
+);
+
+export const DEFAULT_MICRO_TASKS = [];
 
 function validMinutes(value, fallback) {
   const number = Number(value);
@@ -56,7 +62,8 @@ export function normalizeMicroConfig(value) {
   return value
     .filter(item => item && Number.isFinite(Number(item.id)) && typeof item.text === 'string')
     .map(item => ({ id: Number(item.id), text: item.text.trim() }))
-    .filter(item => item.text);
+    .filter(item => item.text)
+    .filter(item => !LEGACY_DEFAULT_MICRO_TEXT.has(item.text.toLowerCase()));
 }
 
 export function createGuestState(date = getLocalDateKey()) {

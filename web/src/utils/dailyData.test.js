@@ -42,3 +42,15 @@ test('micro task configuration is sanitized', () => {
     { id: 3, text: '   ' },
   ]), [{ id: 2, text: 'Drink water' }]);
 });
+
+test('micro task configuration starts empty by default', () => {
+  assert.deepEqual(normalizeMicroConfig(null), []);
+});
+
+test('legacy seeded micro tasks are removed from restored configuration', () => {
+  assert.deepEqual(normalizeMicroConfig([
+    { id: 1, text: 'Apply hair serum' },
+    { id: 2, text: 'Polish shoes' },
+    { id: 9, text: 'Meditate' },
+  ]), [{ id: 9, text: 'Meditate' }]);
+});
