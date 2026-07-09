@@ -48,6 +48,29 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Validate deployment secrets
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          missing=0
+
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error title=Missing NETLIFY_AUTH_TOKEN::Add NETLIFY_AUTH_TOKEN under Settings > Secrets and variables > Actions."
+            missing=1
+          fi
+
+          if [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::error title=Missing NETLIFY_SITE_ID::Add the Netlify Project/Site/API ID under Settings > Secrets and variables > Actions."
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          echo "Netlify deployment secrets are present. Values are hidden."
+
       - name: Build static site inside Docker
         run: |
           docker build \
