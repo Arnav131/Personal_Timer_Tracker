@@ -76,6 +76,37 @@ jobs:
 
           echo "Netlify deployment secrets are present. Values are hidden."
 
+      - name: Validate Netlify site access
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          http_code="$(
+            curl -sS \
+              -o /tmp/netlify-site.json \
+              -w "%{http_code}" \
+              -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+              "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID"
+          )"
+
+          case "$http_code" in
+            200)
+              echo "Netlify site access confirmed."
+              ;;
+            401|403)
+              echo "::error title=Netlify authentication failed::NETLIFY_AUTH_TOKEN is invalid, expired, or does not have access to the configured site."
+              exit 1
+              ;;
+            404)
+              echo "::error title=Netlify site not found::NETLIFY_SITE_ID is wrong, or the token owner cannot access that site. Use the Netlify Project/Site/API ID UUID, not the site name or URL."
+              exit 1
+              ;;
+            *)
+              echo "::error title=Netlify API check failed::Netlify returned HTTP $http_code while validating the configured site."
+              exit 1
+              ;;
+          esac
+
       - name: Build static site inside Docker
         run: |
           docker build \
