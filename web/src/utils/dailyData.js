@@ -24,36 +24,56 @@ function validMinutes(value, fallback) {
   return Number.isFinite(number) && number >= 1 ? number : fallback;
 }
 
+function normalizeTaskList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(item => item && Number.isFinite(Number(item.id)) && typeof item.text === 'string')
+    .map(item => ({
+      id: Number(item.id),
+      text: item.text.trim(),
+      done: Boolean(item.done),
+    }))
+    .filter(item => item.text);
+}
+
+function microConfigToTasks(config, status = {}) {
+  return normalizeMicroConfig(config).map(task => ({
+    ...task,
+    done: Boolean(status?.[task.id]),
+  }));
+}
+
 export function createFreshDailyData(date = getLocalDateKey(), previousData) {
   return {
     date,
     macroTasks: [],
+    microTasks: [],
     pomodoroSessions: 0,
     pomodoroWorkMin: validMinutes(previousData?.pomodoroWorkMin, DEFAULT_WORK_MINUTES),
     pomodoroBreakMin: validMinutes(previousData?.pomodoroBreakMin, DEFAULT_BREAK_MINUTES),
-    microStatus: {},
-    enforcerLogs: [],
   };
 }
 
-export function normalizeDailyData(data, date = getLocalDateKey()) {
-  if (data?.date !== date) return createFreshDailyData(date, data);
+export function normalizeDailyData(data, date = getLocalDateKey(), legacyMicroConfig = []) {
+  if (data?.date !== date) {
+    const fresh = createFreshDailyData(date, data);
+    return data?.date
+      ? fresh
+      : { ...fresh, microTasks: microConfigToTasks(legacyMicroConfig, data?.microStatus) };
+  }
 
   const fresh = createFreshDailyData(date, data);
   return {
-    ...fresh,
-    ...data,
     date,
-    macroTasks: Array.isArray(data?.macroTasks) ? data.macroTasks : [],
+    macroTasks: normalizeTaskList(data?.macroTasks),
+    microTasks: Array.isArray(data?.microTasks)
+      ? normalizeTaskList(data.microTasks)
+      : microConfigToTasks(legacyMicroConfig, data?.microStatus),
     pomodoroSessions: Number.isFinite(Number(data?.pomodoroSessions))
       ? Math.max(0, Number(data.pomodoroSessions))
       : 0,
     pomodoroWorkMin: fresh.pomodoroWorkMin,
     pomodoroBreakMin: fresh.pomodoroBreakMin,
-    microStatus: data?.microStatus && typeof data.microStatus === 'object'
-      ? data.microStatus
-      : {},
-    enforcerLogs: Array.isArray(data?.enforcerLogs) ? data.enforcerLogs : [],
   };
 }
 

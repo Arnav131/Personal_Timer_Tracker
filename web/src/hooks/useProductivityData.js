@@ -5,7 +5,6 @@ import {
   createFreshDailyData,
   createGuestState,
   normalizeDailyData,
-  normalizeMicroConfig,
 } from '../utils/dailyData';
 
 const GUEST_STATE_KEY = 'pe_guest_session';
@@ -21,40 +20,44 @@ function readGuestState() {
       const legacyMicro = localStorage.getItem(LEGACY_MICRO_KEY);
       if (legacyDaily || legacyMicro) {
         const migrated = {
-          data: normalizeDailyData(legacyDaily ? JSON.parse(legacyDaily) : null, today),
-          microConfig: normalizeMicroConfig(legacyMicro ? JSON.parse(legacyMicro) : null),
+          data: normalizeDailyData(
+            legacyDaily ? JSON.parse(legacyDaily) : null,
+            today,
+            legacyMicro ? JSON.parse(legacyMicro) : [],
+          ),
         };
-        saveGuestState(migrated.data, migrated.microConfig);
+        saveGuestState(migrated.data);
         localStorage.removeItem(LEGACY_DAILY_KEY);
         localStorage.removeItem(LEGACY_MICRO_KEY);
         localStorage.removeItem('pe_pomodoro_settings');
         return migrated;
       }
+      return createGuestState(today);
     }
+
     const stored = JSON.parse(sessionValue);
     return {
-      data: normalizeDailyData(stored?.data, today),
-      microConfig: normalizeMicroConfig(stored?.microConfig),
+      data: normalizeDailyData(stored?.data, today, stored?.microConfig),
     };
   } catch {
     return createGuestState(today);
   }
 }
 
-function saveGuestState(data, microConfig) {
+function saveGuestState(data) {
   try {
-    sessionStorage.setItem(GUEST_STATE_KEY, JSON.stringify({ data, microConfig }));
+    sessionStorage.setItem(GUEST_STATE_KEY, JSON.stringify({ data, microConfig: [] }));
   } catch {
     // The React state still keeps the guest's work for this open tab.
   }
 }
 
-function toDatabaseRow(userId, data, microConfig) {
+function toDatabaseRow(userId, data) {
   return {
     user_id: userId,
     daily_date: data.date,
     daily_data: data,
-    micro_config: microConfig,
+    micro_config: [],
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     updated_at: new Date().toISOString(),
   };
@@ -63,9 +66,8 @@ function toDatabaseRow(userId, data, microConfig) {
 export function useProductivityData(user, authLoading) {
   const guest = useRef(readGuestState());
   const [data, setData] = useState(guest.current.data);
-  const [microConfig, setMicroConfig] = useState(guest.current.microConfig);
   const [loading, setLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState('Loading…');
+  const [syncStatus, setSyncStatus] = useState('Loading...');
   const [syncError, setSyncError] = useState('');
   const loadedOwner = useRef(null);
   const saveSequence = useRef(0);
@@ -83,14 +85,13 @@ export function useProductivityData(user, authLoading) {
         const next = readGuestState();
         if (cancelled) return;
         setData(next.data);
-        setMicroConfig(next.microConfig);
         loadedOwner.current = 'guest';
-        setSyncStatus('Guest · this tab only');
+        setSyncStatus('Guest - this tab only');
         setLoading(false);
         return;
       }
 
-      setSyncStatus('Loading cloud data…');
+      setSyncStatus('Loading cloud data...');
       const { data: row, error } = await supabase
         .from('user_productivity_state')
         .select('daily_date,daily_data,micro_config')
@@ -107,27 +108,23 @@ export function useProductivityData(user, authLoading) {
 
       const today = getLocalDateKey();
       let nextData;
-      let nextMicro;
 
       if (row) {
         nextData = row.daily_date === today
-          ? normalizeDailyData(row.daily_data, today)
+          ? normalizeDailyData(row.daily_data, today, row.micro_config)
           : createFreshDailyData(today, row.daily_data);
-        nextMicro = normalizeMicroConfig(row.micro_config);
       } else {
         // First sign-in keeps work already entered in this tab.
         const currentGuest = readGuestState();
         nextData = normalizeDailyData(currentGuest.data, today);
-        nextMicro = normalizeMicroConfig(currentGuest.microConfig);
       }
 
       setData(nextData);
-      setMicroConfig(nextMicro);
       loadedOwner.current = owner;
 
       const { error: saveError } = await supabase
         .from('user_productivity_state')
-        .upsert(toDatabaseRow(user.id, nextData, nextMicro), { onConflict: 'user_id' });
+        .upsert(toDatabaseRow(user.id, nextData), { onConflict: 'user_id' });
 
       if (cancelled) return;
       if (!saveError) sessionStorage.removeItem(GUEST_STATE_KEY);
@@ -144,28 +141,27 @@ export function useProductivityData(user, authLoading) {
     if (loading || loadedOwner.current !== (user?.id || 'guest')) return;
 
     if (!user || !supabase) {
-      saveGuestState(data, microConfig);
-      setSyncStatus('Guest · this tab only');
+      saveGuestState(data);
+      setSyncStatus('Guest - this tab only');
       return;
     }
 
     const sequence = ++saveSequence.current;
-    setSyncStatus('Saving…');
+    setSyncStatus('Saving...');
     const timer = setTimeout(async () => {
       const { error } = await supabase
         .from('user_productivity_state')
-        .upsert(toDatabaseRow(user.id, data, microConfig), { onConflict: 'user_id' });
+        .upsert(toDatabaseRow(user.id, data), { onConflict: 'user_id' });
       if (sequence !== saveSequence.current) return;
       setSyncError(error?.message || '');
       setSyncStatus(error ? 'Cloud sync error' : 'Saved to cloud');
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [data, microConfig, user, loading]);
+  }, [data, user, loading]);
 
   const resetDay = useCallback(() => {
     setData(current => createFreshDailyData(getLocalDateKey(), current));
-    setMicroConfig(normalizeMicroConfig(null));
   }, []);
 
   useEffect(() => {
@@ -205,8 +201,6 @@ export function useProductivityData(user, authLoading) {
   return {
     data,
     setData,
-    microConfig,
-    setMicroConfig,
     loading,
     syncStatus,
     syncError,

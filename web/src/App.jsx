@@ -1,13 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useProductivityData } from './hooks/useProductivityData';
 import { useNightlyReminder } from './hooks/useNightlyReminder';
 import { useTimer } from './hooks/useTimer';
 import { useTheme } from './hooks/useTheme';
-import { useEnforcer } from './hooks/useEnforcer';
 import { playOnce } from './utils/audioManager';
 import { generatePDF } from './utils/pdfGenerator';
-import { getLocalTimeKey } from './utils/localDate';
 
 import Navbar from './components/Navbar';
 import ProgressDashboard from './components/ProgressDashboard';
@@ -15,7 +13,6 @@ import PomodoroTimer from './components/PomodoroTimer';
 import MacroView from './components/MacroView';
 import MicroView from './components/MicroView';
 import BreakPrompt from './components/BreakPrompt';
-import EnforcerModal from './components/EnforcerModal';
 import SettingsPanel from './components/SettingsPanel';
 import NightlyReminder from './components/NightlyReminder';
 import PixelIcon from './components/PixelIcon';
@@ -25,21 +22,20 @@ export default function App() {
   const {
     data,
     setData,
-    microConfig,
-    setMicroConfig,
     loading: dataLoading,
     syncStatus,
     syncError,
     resetDay,
   } = useProductivityData(auth.user, auth.loading);
   const { bgUrl, allBackgrounds, setBackground, addCustomBackground, panelTransparency, setPanelTransparency } = useTheme();
-  const { showEnforcer, resetTimer: resetEnforcer } = useEnforcer();
 
   const [mode, setMode] = useState('macro');
   const [showBreakPrompt, setShowBreakPrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPomodoroSettings, setShowPomodoroSettings] = useState(false);
   const [musicPauseSignal, setMusicPauseSignal] = useState(0);
+  const [scrollState, setScrollState] = useState({ canScroll: false, isAtBottom: false });
+  const appScrollRef = useRef(null);
 
   const timer = useTimer(data.pomodoroWorkMin, data.pomodoroBreakMin);
   const { onComplete, startBreak, startWork } = timer;
@@ -60,6 +56,49 @@ export default function App() {
     });
   }, [onComplete, setData]);
 
+  const updateScrollState = useCallback(() => {
+    const el = appScrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    setScrollState({
+      canScroll: maxScroll > 12,
+      isAtBottom: el.scrollTop >= maxScroll - 12,
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = appScrollRef.current;
+    if (!el) return undefined;
+
+    let frame = 0;
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateScrollState);
+    };
+
+    scheduleUpdate();
+    el.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, [updateScrollState]);
+
+  useEffect(() => {
+    updateScrollState();
+  }, [data.macroTasks.length, data.microTasks?.length, mode, updateScrollState]);
+
+  const handleScrollAssist = useCallback(() => {
+    const el = appScrollRef.current;
+    if (!el) return;
+    el.scrollTo({
+      top: scrollState.isAtBottom ? 0 : el.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [scrollState.isAtBottom]);
+
   const handleBreak = useCallback(() => {
     setShowBreakPrompt(false);
     startBreak();
@@ -75,26 +114,15 @@ export default function App() {
     startWork();
   }, [startWork]);
 
-  const handleEnforcerSubmit = useCallback((text) => {
-    setData(prev => ({
-      ...prev,
-      enforcerLogs: [
-        ...prev.enforcerLogs,
-        { timestamp: getLocalTimeKey(), text },
-      ],
-    }));
-    resetEnforcer();
-  }, [setData, resetEnforcer]);
-
   const handlePdf = useCallback(() => {
-    generatePDF(data, microConfig);
-  }, [data, microConfig]);
+    generatePDF(data);
+  }, [data]);
 
   const reminder = useNightlyReminder();
 
   const handleManualReset = useCallback(() => {
     const confirmed = window.confirm(
-      "Reset all of today's tasks, progress, Pomodoro sessions, and logs? This cannot be undone.",
+      "Reset all of today's tasks, progress, and Pomodoro sessions? This cannot be undone.",
     );
     if (!confirmed) return false;
     resetDay();
@@ -118,7 +146,7 @@ export default function App() {
         style={{ backgroundImage: `url(${bgUrl})` }}
       />
 
-      <div className="app-container">
+      <div className="app-container" ref={appScrollRef}>
         <Navbar
           onSettings={() => setShowSettings(true)}
           onPdf={handlePdf}
@@ -149,7 +177,6 @@ export default function App() {
 
         <ProgressDashboard
           data={data}
-          microConfig={microConfig}
           musicPauseSignal={musicPauseSignal}
         />
 
@@ -167,12 +194,22 @@ export default function App() {
             <MicroView
               data={data}
               setData={setData}
-              microConfig={microConfig}
-              setMicroConfig={setMicroConfig}
             />
           )}
         </div>
       </div>
+
+      {scrollState.canScroll && (
+        <button
+          className={`scroll-assist ${scrollState.isAtBottom ? 'scroll-assist--up' : ''}`}
+          type="button"
+          onClick={handleScrollAssist}
+          aria-label={scrollState.isAtBottom ? 'Scroll to top' : 'Scroll to bottom'}
+          title={scrollState.isAtBottom ? 'Scroll to top' : 'Scroll to bottom'}
+        >
+          <span className="scroll-assist__arrow" aria-hidden="true" />
+        </button>
+      )}
 
       {showBreakPrompt && (
         <BreakPrompt
@@ -180,10 +217,6 @@ export default function App() {
           onMicro={handleMicro}
           onContinue={handleContinue}
         />
-      )}
-
-      {showEnforcer && (
-        <EnforcerModal onSubmit={handleEnforcerSubmit} />
       )}
 
       {showSettings && (
